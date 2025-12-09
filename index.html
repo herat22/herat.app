@@ -2015,7 +2015,6 @@ async function loadDB() {
         else { const s = generateSalt(); db.users = [{ u: 'admin', salt: s, hash: hashPassword('123456', s), perms: { hawala: true, exchange: true, accounts: true, tt: true, admin: true } }]; }
         fxProfit = db.fxProfit || {};
         if (!db.settings) db.settings = { printHeader: false };
-if (!db.avgRates) db.avgRates = {};
         db.currencies.forEach(c => { if (db.cashBox[c] === undefined) db.cashBox[c] = 0; if (db.initialCapital[c] === undefined) db.initialCapital[c] = 0; });
         db.cityHawalaCounters = db.cityHawalaCounters || {};
         db.cities.forEach(city => { if (!db.cityHawalaCounters[city.code]) { db.cityHawalaCounters[city.code] = { Outgoing: 1001, Incoming: 1001 }; } });
@@ -2176,21 +2175,15 @@ function updateUI() {
     const currToDelete = document.getElementById('currToDelete'); 
     if (currToDelete) currToDelete.innerHTML = db.currencies.map(c => `<option value="${c}">${c}</option>`).join('');
     const initCapDiv = document.getElementById('initialCapitalInputs');
-     if (initCapDiv) { 
-        initCapDiv.innerHTML = db.currencies.map(c => {
-            const currentRate = (db.avgRates && db.avgRates[c]) ? db.avgRates[c] : 0;
-            return `
-            <div style="display:flex; gap:5px; align-items:center; margin-bottom:5px; border-bottom:1px dashed #444; padding-bottom:5px;">
-                <div style="flex:1">
-                    <span style="font-size:11px; color:var(--gold-primary)">موجودی ${c}:</span>
-                    <input type="number" id="initCap_${c}" class="input" placeholder="Amount" value="${db.initialCapital[c] || 0}" style="margin-bottom:2px">
-                </div>
-                <div style="flex:1">
-                    <span style="font-size:11px; color:#4caf50">نرخ خرید (${c}):</span>
-                    <input type="number" id="initRate_${c}" class="input" placeholder="Rate" value="${currentRate}" style="margin-bottom:2px">
-                </div>
-            </div>`;
-        }).join(''); 
+    if (initCapDiv) { 
+        initCapDiv.innerHTML = db.currencies.map(c => `<div style="display:flex; gap:5px; align-items:center; margin-bottom:5px"><input type="number" id="initCap_${c}" class="input" placeholder="0" value="${db.initialCapital[c] || 0}"> <span>${c}</span></div>`).join(''); 
+    } 
+    if (document.getElementById('printHeaderOpt')) document.getElementById('printHeaderOpt').checked = db.settings ? db.settings.printHeader : false;
+    if (document.getElementById('printHeaderGlobal')) document.getElementById('printHeaderGlobal').innerHTML = getPrintHeaderHTML();
+    if (currentUser && currentUser.perms.admin) { 
+        renderDashboard(); 
+        renderJournal(); 
+        renderUserManagement(); 
     }
     if(document.getElementById('hawala').classList.contains('active')) filterHawala(); 
     if(document.getElementById('accounts').classList.contains('active')) loadCustomerLedger();
@@ -2849,23 +2842,7 @@ function toggleFxOperator() { fxOperator = fxOperator === 'multiply' ? 'divide' 
 function calcFx() { 
     const baseAmt = parseFloat(document.getElementById('fxBaseAmt').value) || 0; 
     const rate = parseFloat(document.getElementById('fxRate').value) || 1; 
-    const quoteCurr = document.getElementById('fxQuoteCurr').value; 
-    const baseCurr = document.getElementById('fxBaseCurr').value; // نام ارزی که دارید معامله می‌کنید
-
-    // --- این قسمت جدید است: پر کردن اتوماتیک قیمت خرید ---
-    // فقط وقتی "فروش" را انتخاب کرده باشید این کار را می‌کند
-    if (fxDirection === 'Sell') {
-        // اگر نرخ‌های خرید قبلاً ذخیره شده باشند، آن را پیدا می‌کند
-        if (db.avgRates && db.avgRates[baseCurr]) {
-            const myBuyRate = db.avgRates[baseCurr];
-            // عدد را داخل کادر "محاسبه سود" می‌نویسد
-            document.getElementById('exCostBasis').value = myBuyRate;
-        } else {
-            // اگر نرخی پیدا نکرد، کادر را خالی می‌گذارد
-            document.getElementById('exCostBasis').value = '';
-        }
-    }
-    // ----------------------------------------------------
+    const quoteCurr = document.getElementById('fxQuoteCurr').value; // ارز دوم (مثلا افغانی)
 
     let quoteAmt = 0; 
     if (rate !== 0) { 
@@ -2874,16 +2851,20 @@ function calcFx() {
     } 
     document.getElementById('fxQuoteAmt').value = quoteAmt.toFixed(2); 
 
-    // محاسبه سود بر اساس عددی که سیستم یا شما وارد کرده‌اید
+    // --- قسمت جدید برای محاسبه سود با نرخ ---
+    // عددی که در کادر سود وارد میکنید، نرخ خرید قبلی است (مثلا 69)
     const costRate = parseFloat(document.getElementById('exCostBasis').value); 
     
     if(costRate && fxDirection === 'Sell') { 
+        // فرمول: (مقدار * نرخ فروش) منهای (مقدار * نرخ خرید)
         const totalSell = quoteAmt; 
         const totalBuy = baseAmt * costRate; 
         const profit = totalSell - totalBuy;
         
+        // نمایش سود به همراه نام ارز دوم (مثلا 3000 AFN)
         document.getElementById('estimatedProfit').innerText = profit.toLocaleString() + " " + quoteCurr; 
         
+        // رنگی کردن سود
         if(profit >= 0) document.getElementById('estimatedProfit').style.color = "var(--success)"; // سبز
         else document.getElementById('estimatedProfit').style.color = "var(--danger)"; // قرمز
     } else { 
@@ -2898,47 +2879,36 @@ async function submitExchange() {
     const desc = document.getElementById('exDesc').value; 
     const rate = parseFloat(document.getElementById('fxRate').value);
 
+    // بررسی خطاهای ورودی
     if (!baseAmt || baseAmt <= 0 || !quoteAmt || baseCurr === quoteCurr) { 
-        alert("اطلاعات ناقص است"); return; 
+        alert("اطلاعات معامله ناقص یا اشتباه است"); return; 
     }
 
-    if (!db.avgRates) db.avgRates = {};
     let profit = 0; 
+    // اینجا عدد 69 (نرخ خرید) را میخواند
+    const costRate = parseFloat(document.getElementById('exCostBasis').value);
 
-    // اگر فروش است، سود را حساب کن
-    if (fxDirection === 'Sell') {
-        const avgBuyRate = db.avgRates[baseCurr] || 0; 
-        if (avgBuyRate > 0) {
-            const totalCost = baseAmt * avgBuyRate; 
-            profit = quoteAmt - totalCost; 
-        }
-    }
-
-    // اگر خرید است، نرخ میانگین را آپدیت کن
-    if (fxDirection === 'Buy') {
-        const oldQty = (db.cashBox[baseCurr] || 0) + (db.initialCapital[baseCurr] || 0);
-        const oldRate = db.avgRates[baseCurr] || 0;
-        const oldTotalValue = oldQty * oldRate; 
-        const newTradeValue = quoteAmt; 
-        const totalNewQty = oldQty + baseAmt;
-        if (totalNewQty > 0) {
-            const newAvgRate = (oldTotalValue + newTradeValue) / totalNewQty;
-            db.avgRates[baseCurr] = newAvgRate; 
-        }
+    // محاسبه سود: (پول دریافتی) منهای (مقدار * نرخ خرید قبلی)
+    if (costRate && fxDirection === 'Sell') { 
+        const totalBuyCost = baseAmt * costRate; 
+        profit = quoteAmt - totalBuyCost; 
     }
 
     const logData = { baseCurr: baseCurr, baseAmt: baseAmt, quoteCurr: quoteCurr, quoteAmt: quoteAmt, direction: fxDirection, profit: profit, isInternal: false };
     const actionText = fxDirection === 'Buy' ? `Buy ${baseAmt} ${baseCurr}` : `Sell ${baseAmt} ${baseCurr}`;
 
     if (exType === 'internal') {
+        // --- معامله با مشتری حساب‌دار ---
         const cust = document.getElementById('exCustomer').value; 
-        if (!cust) { alert('مشتری انتخاب نشده'); return; }
+        if (!cust) { alert('مشتری انتخاب نشده است'); return; }
         const id1 = Date.now(); const id2 = Date.now() + 1;
 
         if (fxDirection === 'Buy') {
+            // خرید از مشتری
             db.accounts[cust].push({ id: id1, date: Date.now(), desc: `فروش ارز به صرافی (${actionText} @ ${rate})`, curr: baseCurr, debit: baseAmt, credit: 0, type: 'debit' });
             db.accounts[cust].push({ id: id2, date: Date.now(), desc: `دریافت معادل (${quoteAmt} ${quoteCurr})`, curr: quoteCurr, debit: 0, credit: quoteAmt, type: 'credit' });
         } else {
+            // فروش به مشتری
             db.accounts[cust].push({ id: id1, date: Date.now(), desc: `خرید ارز از صرافی (${actionText} @ ${rate})`, curr: baseCurr, debit: 0, credit: baseAmt, type: 'credit' });
             db.accounts[cust].push({ id: id2, date: Date.now(), desc: `پرداخت معادل (${quoteAmt} ${quoteCurr})`, curr: quoteCurr, debit: quoteAmt, credit: 0, type: 'debit' });
         }
@@ -2946,16 +2916,20 @@ async function submitExchange() {
         logTx('صرافی (داخلی)', `Int FX ${cust}`, `${actionText}`, 'EXCHANGE', logData);
 
     } else {
+        // --- معامله نقدی ---
         if (fxDirection === 'Buy') { 
-            if ((db.cashBox[quoteCurr] || 0) + (db.initialCapital[quoteCurr] || 0) < quoteAmt) { alert(`موجودی صندوق ${quoteCurr} کم است!`); return; } 
+            // خرید: دلار میاد، افغانی میره
+            if ((db.cashBox[quoteCurr] || 0) + (db.initialCapital[quoteCurr] || 0) < quoteAmt) { alert(`موجودی صندوق ${quoteCurr} کافی نیست!`); return; } 
             db.cashBox[baseCurr] = (db.cashBox[baseCurr] || 0) + baseAmt; 
             db.cashBox[quoteCurr] = (db.cashBox[quoteCurr] || 0) - quoteAmt; 
         } else { 
-            if ((db.cashBox[baseCurr] || 0) + (db.initialCapital[baseCurr] || 0) < baseAmt) { alert(`موجودی صندوق ${baseCurr} کم است!`); return; } 
+            // فروش: دلار میره، افغانی میاد
+            if ((db.cashBox[baseCurr] || 0) + (db.initialCapital[baseCurr] || 0) < baseAmt) { alert(`موجودی صندوق ${baseCurr} کافی نیست!`); return; } 
             db.cashBox[baseCurr] = (db.cashBox[baseCurr] || 0) - baseAmt; 
             db.cashBox[quoteCurr] = (db.cashBox[quoteCurr] || 0) + quoteAmt; 
         }
         
+        // *** اصلاح مهم: سود به ارز دوم (مثل افغانی) اضافه میشود ***
         if (profit !== 0 && fxDirection === 'Sell') { 
             fxProfit[quoteCurr] = (fxProfit[quoteCurr] || 0) + profit; 
         }
@@ -2965,16 +2939,10 @@ async function submitExchange() {
     await saveDB(); 
     renderDashboard(); 
     
+    // پاک کردن کادرها بعد از انجام
     document.getElementById('exCostBasis').value = '';
     document.getElementById('estimatedProfit').innerText = '---';
-    
-    // نمایش پیام فارسی سود یا ضرر
-    let msg = 'معامله انجام شد.';
-    if(profit !== 0 && fxDirection === 'Sell') {
-        if(profit > 0) msg += `\n✅ سود این معامله: ${profit.toLocaleString()} ${quoteCurr}`;
-        else msg += `\n❌ زیان این معامله: ${profit.toLocaleString()} ${quoteCurr}`;
-    }
-    alert(msg);
+    alert('معامله با موفقیت انجام شد.');
 }
 
 function printLedger() { 
@@ -3169,19 +3137,7 @@ function exportLedgerToExcel() {
     XLSX.writeFile(wb, `صورتحساب_${c}.xlsx`);
 }
 // --- پایان کدهای اکسل ---
-async function setInitialCapital() { 
-    if (currentUser.perms.admin) { 
-        if (!db.avgRates) db.avgRates = {}; 
-        db.currencies.forEach(c => {
-            db.initialCapital[c] = parseFloat(document.getElementById(`initCap_${c}`).value) || 0;
-            const rateInput = document.getElementById(`initRate_${c}`);
-            if(rateInput) { db.avgRates[c] = parseFloat(rateInput.value) || 0; }
-        });
-        await saveDB(); 
-        alert('سرمایه و نرخ خرید ذخیره شد.'); 
-        renderDashboard(); 
-    } 
-}
+async function setInitialCapital() { if (currentUser.perms.admin) { db.currencies.forEach(c => db.initialCapital[c] = parseFloat(document.getElementById(`initCap_${c}`).value) || 0); await saveDB(); alert('Capital Saved.'); renderDashboard(); } }
 async function changeMyPass() { const p = document.getElementById('myNewPass').value; if (p.length < 4) return; const u = db.users.find(x => x.u === currentUser.u); u.salt = generateSalt(); u.hash = hashPassword(p, u.salt); await saveDB(); alert('Password Changed.'); }
 async function addUser() { const u = document.getElementById('newUName').value, p = document.getElementById('newUPass').value; if (u && p) { const s = generateSalt(); db.users.push({ u, salt: s, hash: hashPassword(p, s), perms: { hawala: document.getElementById('perm_hawala').checked, exchange: document.getElementById('perm_exchange').checked, accounts: document.getElementById('perm_accounts').checked, tt: document.getElementById('perm_tt').checked, admin: document.getElementById('perm_admin').checked } }); await saveDB(); renderUserManagement(); alert("User Added."); } }
 function renderUserManagement() { document.getElementById('userListManage').innerHTML = db.users.map(u => `<div>${u.u} <button onclick="delUser('${u.u}')" class="btn btn-red" style="padding:2px 5px; font-size:10px">Delete</button></div>`).join(''); }
