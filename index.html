@@ -189,6 +189,49 @@ html[dir="ltr"] .theme-switch { right: 20px; }
     ::-webkit-scrollbar { display: none; }
     #printHeaderGlobal { display: block !important; margin-bottom: 20px; }
 }
+/* --- شروع کدهای جدید منوی کشویی --- */
+.group-header {
+    justify-content: space-between !important;
+    background: rgba(0,0,0,0.2);
+    border: 1px dashed var(--gold-border);
+}
+.group-header:hover {
+    background: var(--gold-faint);
+}
+.submenu {
+    display: none;
+    flex-direction: column;
+    padding-right: 15px;
+    border-right: 2px solid var(--gold-primary);
+    margin-right: 10px;
+    margin-bottom: 10px;
+    background: rgba(0,0,0,0.1);
+    border-radius: 8px;
+    animation: slideDown 0.3s ease;
+}
+html[dir="ltr"] .submenu {
+    padding-right: 0;
+    padding-left: 15px;
+    border-right: none;
+    border-left: 2px solid var(--gold-primary);
+    margin-right: 0;
+    margin-left: 10px;
+}
+.submenu.open {
+    display: flex;
+}
+.arrow-icon {
+    font-size: 10px;
+    transition: 0.3s;
+}
+.submenu.open + .group-header .arrow-icon {
+    transform: rotate(180deg);
+}
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+/* --- پایان کدهای جدید --- */
 </style>
 </head>
 <body>
@@ -217,53 +260,66 @@ html[dir="ltr"] .theme-switch { right: 20px; }
 </div>
 <div id="mainApp">
     <div class="sidebar">
-        <div style="text-align:center; margin-bottom:30px; border-bottom:1px solid var(--gold-border); padding-bottom:20px">
-            <h2 style="color:var(--gold-primary); text-shadow: 0 0 10px var(--gold-shadow); font-weight: 900; font-size: 24px;" data-i18n="app_title">شرکت هراتی‌ها</h2>
-            <div style="font-size:12px; margin-top:5px; color: var(--gold-primary); opacity:0.8; font-weight:500;" id="sidebarUserInfo"></div>
+        <div style="text-align:center; margin-bottom:20px; border-bottom:1px solid var(--gold-border); padding-bottom:15px">
+            <h2 style="color:var(--gold-primary); text-shadow: 0 0 10px var(--gold-shadow); font-weight: 900; font-size: 22px;" data-i18n="app_title">شرکت هراتی‌ها</h2>
+            <div style="font-size:12px; margin-top:5px; color: var(--gold-primary); opacity:0.8; font-weight:500;" id="sidebarUserInfo">User</div>
         </div>
         
         <button class="nav-btn active admin-only-btn" onclick="go('dashboard')" id="nav-dashboard">
             <span data-i18n="nav_dashboard">📊 داشبورد (F1)</span>
         </button>
         
-        <button class="nav-btn" onclick="go('hawala')" id="nav-hawala">
-            <span data-i18n="nav_hawala">✈️ حواله‌جات (F2)</span>
+        <button class="nav-btn group-header" onclick="toggleGroup('grp-ops')">
+            <span>🔄 عملیات پولی</span>
+            <span class="arrow-icon">▼</span>
         </button>
-        
-        <button class="nav-btn" onclick="go('accounts')" id="nav-accounts">
-            <span data-i18n="nav_accounts">👥 حساب مشتریان (F3)</span>
-        </button>
-        
-        <button class="nav-btn" onclick="go('ttPage')" id="nav-tt">
-            <span data-i18n="nav_tt">🌐 انتقال ارز (TT) (F6)</span>
-        </button>
-        
-        <button class="nav-btn" onclick="go('exchange')" id="nav-exchange">
-            <span data-i18n="nav_exchange">💱 خرید و فروش (FX) (F4)</span>
-        </button>
-        
-        <button class="nav-btn" onclick="go('cryptoFX')" id="nav-crypto">
-            <span data-i18n="nav_crypto">🪙 ارز دیجیتال (Crypto)</span>
-        </button>
-        
-<button class="nav-btn admin-only-btn" onclick="go('analysis')" id="nav-analysis">
-            <span data-i18n="nav_analysis">🧮 آنالیز سرمایه (F7)</span>
-        </button>
+        <div id="grp-ops" class="submenu">
+            <button class="nav-btn" onclick="go('hawala')" id="nav-hawala">
+                <span data-i18n="nav_hawala">✈️ حواله‌جات (F2)</span>
+            </button>
+            <button class="nav-btn" onclick="go('ttPage')" id="nav-tt">
+                <span data-i18n="nav_tt">🌐 انتقال ارز (TT) (F6)</span>
+            </button>
+            <button class="nav-btn" onclick="go('exchange')" id="nav-exchange">
+                <span data-i18n="nav_exchange">💱 خرید و فروش (F4)</span>
+            </button>
+            <button class="nav-btn" onclick="go('cryptoFX')" id="nav-crypto">
+                <span data-i18n="nav_crypto">🪙 ارز دیجیتال</span>
+            </button>
+        </div>
 
-<button class="nav-btn admin-only-btn" onclick="go('employees')" id="nav-employees">
-    <span>👔 مدیریت کارمندان</span>
-</button>
-
-        <button class="nav-btn admin-only-btn" onclick="go('reports')" id="nav-reports">
-            <span data-i18n="nav_reports">📑 گزارشات (Logs)</span>
+        <button class="nav-btn group-header" onclick="toggleGroup('grp-people')">
+            <span>👥 مدیریت اشخاص</span>
+            <span class="arrow-icon">▼</span>
         </button>
+        <div id="grp-people" class="submenu">
+            <button class="nav-btn" onclick="go('accounts')" id="nav-accounts">
+                <span data-i18n="nav_accounts">👥 حساب مشتریان (F3)</span>
+            </button>
+            <button class="nav-btn admin-only-btn" onclick="go('employees')" id="nav-employees">
+                <span>👔 کارمندان</span>
+            </button>
+        </div>
+
+        <button class="nav-btn group-header admin-only-btn" onclick="toggleGroup('grp-reports')">
+            <span>📑 گزارش و آنالیز</span>
+            <span class="arrow-icon">▼</span>
+        </button>
+        <div id="grp-reports" class="submenu">
+            <button class="nav-btn admin-only-btn" onclick="go('analysis')" id="nav-analysis">
+                <span data-i18n="nav_analysis">🧮 آنالیز سرمایه (F7)</span>
+            </button>
+            <button class="nav-btn admin-only-btn" onclick="go('reports')" id="nav-reports">
+                <span data-i18n="nav_reports">📑 لاگ سیستم</span>
+            </button>
+        </div>
         
-        <div style="margin-top:auto; border-top:1px solid var(--gold-border); padding-top:20px">
+        <div style="margin-top:auto; border-top:1px solid var(--gold-border); padding-top:10px">
             <button class="nav-btn" onclick="openSettings()">
                 <span data-i18n="nav_settings">⚙️ تنظیمات</span>
             </button>
             <button class="nav-btn" style="color:var(--danger); border-color:rgba(255, 82, 82, 0.3)" onclick="logout()">
-                <span data-i18n="nav_logout">🚪 خروج امن</span>
+                <span data-i18n="nav_logout">🚪 خروج</span>
             </button>
         </div>
     </div>
@@ -1986,6 +2042,17 @@ function toggleTheme() {
     html.setAttribute('data-theme', next);
 }
 
+// --- شروع کد جدید برای منوی کشویی ---
+function toggleGroup(id) {
+    const submenu = document.getElementById(id);
+    if (submenu.classList.contains('open')) {
+        submenu.classList.remove('open');
+    } else {
+        document.querySelectorAll('.submenu').forEach(el => el.classList.remove('open'));
+        submenu.classList.add('open');
+    }
+}
+// --- پایان کد جدید ---
 function getPrintHeaderHTML() {
     // اگر تنظیمات نداریم، خالی برگردان
     if (!db.settings) return '';
@@ -2015,6 +2082,7 @@ async function loadDB() {
         else { const s = generateSalt(); db.users = [{ u: 'admin', salt: s, hash: hashPassword('123456', s), perms: { hawala: true, exchange: true, accounts: true, tt: true, admin: true } }]; }
         fxProfit = db.fxProfit || {};
         if (!db.settings) db.settings = { printHeader: false };
+if (!db.avgRates) db.avgRates = {};
         db.currencies.forEach(c => { if (db.cashBox[c] === undefined) db.cashBox[c] = 0; if (db.initialCapital[c] === undefined) db.initialCapital[c] = 0; });
         db.cityHawalaCounters = db.cityHawalaCounters || {};
         db.cities.forEach(city => { if (!db.cityHawalaCounters[city.code]) { db.cityHawalaCounters[city.code] = { Outgoing: 1001, Incoming: 1001 }; } });
@@ -2175,15 +2243,21 @@ function updateUI() {
     const currToDelete = document.getElementById('currToDelete'); 
     if (currToDelete) currToDelete.innerHTML = db.currencies.map(c => `<option value="${c}">${c}</option>`).join('');
     const initCapDiv = document.getElementById('initialCapitalInputs');
-    if (initCapDiv) { 
-        initCapDiv.innerHTML = db.currencies.map(c => `<div style="display:flex; gap:5px; align-items:center; margin-bottom:5px"><input type="number" id="initCap_${c}" class="input" placeholder="0" value="${db.initialCapital[c] || 0}"> <span>${c}</span></div>`).join(''); 
-    } 
-    if (document.getElementById('printHeaderOpt')) document.getElementById('printHeaderOpt').checked = db.settings ? db.settings.printHeader : false;
-    if (document.getElementById('printHeaderGlobal')) document.getElementById('printHeaderGlobal').innerHTML = getPrintHeaderHTML();
-    if (currentUser && currentUser.perms.admin) { 
-        renderDashboard(); 
-        renderJournal(); 
-        renderUserManagement(); 
+     if (initCapDiv) { 
+        initCapDiv.innerHTML = db.currencies.map(c => {
+            const currentRate = (db.avgRates && db.avgRates[c]) ? db.avgRates[c] : 0;
+            return `
+            <div style="display:flex; gap:5px; align-items:center; margin-bottom:5px; border-bottom:1px dashed #444; padding-bottom:5px;">
+                <div style="flex:1">
+                    <span style="font-size:11px; color:var(--gold-primary)">موجودی ${c}:</span>
+                    <input type="number" id="initCap_${c}" class="input" placeholder="Amount" value="${db.initialCapital[c] || 0}" style="margin-bottom:2px">
+                </div>
+                <div style="flex:1">
+                    <span style="font-size:11px; color:#4caf50">نرخ خرید (${c}):</span>
+                    <input type="number" id="initRate_${c}" class="input" placeholder="Rate" value="${currentRate}" style="margin-bottom:2px">
+                </div>
+            </div>`;
+        }).join(''); 
     }
     if(document.getElementById('hawala').classList.contains('active')) filterHawala(); 
     if(document.getElementById('accounts').classList.contains('active')) loadCustomerLedger();
@@ -2842,7 +2916,23 @@ function toggleFxOperator() { fxOperator = fxOperator === 'multiply' ? 'divide' 
 function calcFx() { 
     const baseAmt = parseFloat(document.getElementById('fxBaseAmt').value) || 0; 
     const rate = parseFloat(document.getElementById('fxRate').value) || 1; 
-    const quoteCurr = document.getElementById('fxQuoteCurr').value; // ارز دوم (مثلا افغانی)
+    const quoteCurr = document.getElementById('fxQuoteCurr').value; 
+    const baseCurr = document.getElementById('fxBaseCurr').value; // نام ارزی که دارید معامله می‌کنید
+
+    // --- این قسمت جدید است: پر کردن اتوماتیک قیمت خرید ---
+    // فقط وقتی "فروش" را انتخاب کرده باشید این کار را می‌کند
+    if (fxDirection === 'Sell') {
+        // اگر نرخ‌های خرید قبلاً ذخیره شده باشند، آن را پیدا می‌کند
+        if (db.avgRates && db.avgRates[baseCurr]) {
+            const myBuyRate = db.avgRates[baseCurr];
+            // عدد را داخل کادر "محاسبه سود" می‌نویسد
+            document.getElementById('exCostBasis').value = myBuyRate;
+        } else {
+            // اگر نرخی پیدا نکرد، کادر را خالی می‌گذارد
+            document.getElementById('exCostBasis').value = '';
+        }
+    }
+    // ----------------------------------------------------
 
     let quoteAmt = 0; 
     if (rate !== 0) { 
@@ -2851,20 +2941,16 @@ function calcFx() {
     } 
     document.getElementById('fxQuoteAmt').value = quoteAmt.toFixed(2); 
 
-    // --- قسمت جدید برای محاسبه سود با نرخ ---
-    // عددی که در کادر سود وارد میکنید، نرخ خرید قبلی است (مثلا 69)
+    // محاسبه سود بر اساس عددی که سیستم یا شما وارد کرده‌اید
     const costRate = parseFloat(document.getElementById('exCostBasis').value); 
     
     if(costRate && fxDirection === 'Sell') { 
-        // فرمول: (مقدار * نرخ فروش) منهای (مقدار * نرخ خرید)
         const totalSell = quoteAmt; 
         const totalBuy = baseAmt * costRate; 
         const profit = totalSell - totalBuy;
         
-        // نمایش سود به همراه نام ارز دوم (مثلا 3000 AFN)
         document.getElementById('estimatedProfit').innerText = profit.toLocaleString() + " " + quoteCurr; 
         
-        // رنگی کردن سود
         if(profit >= 0) document.getElementById('estimatedProfit').style.color = "var(--success)"; // سبز
         else document.getElementById('estimatedProfit').style.color = "var(--danger)"; // قرمز
     } else { 
@@ -2879,36 +2965,47 @@ async function submitExchange() {
     const desc = document.getElementById('exDesc').value; 
     const rate = parseFloat(document.getElementById('fxRate').value);
 
-    // بررسی خطاهای ورودی
     if (!baseAmt || baseAmt <= 0 || !quoteAmt || baseCurr === quoteCurr) { 
-        alert("اطلاعات معامله ناقص یا اشتباه است"); return; 
+        alert("اطلاعات ناقص است"); return; 
     }
 
+    if (!db.avgRates) db.avgRates = {};
     let profit = 0; 
-    // اینجا عدد 69 (نرخ خرید) را میخواند
-    const costRate = parseFloat(document.getElementById('exCostBasis').value);
 
-    // محاسبه سود: (پول دریافتی) منهای (مقدار * نرخ خرید قبلی)
-    if (costRate && fxDirection === 'Sell') { 
-        const totalBuyCost = baseAmt * costRate; 
-        profit = quoteAmt - totalBuyCost; 
+    // اگر فروش است، سود را حساب کن
+    if (fxDirection === 'Sell') {
+        const avgBuyRate = db.avgRates[baseCurr] || 0; 
+        if (avgBuyRate > 0) {
+            const totalCost = baseAmt * avgBuyRate; 
+            profit = quoteAmt - totalCost; 
+        }
+    }
+
+    // اگر خرید است، نرخ میانگین را آپدیت کن
+    if (fxDirection === 'Buy') {
+        const oldQty = (db.cashBox[baseCurr] || 0) + (db.initialCapital[baseCurr] || 0);
+        const oldRate = db.avgRates[baseCurr] || 0;
+        const oldTotalValue = oldQty * oldRate; 
+        const newTradeValue = quoteAmt; 
+        const totalNewQty = oldQty + baseAmt;
+        if (totalNewQty > 0) {
+            const newAvgRate = (oldTotalValue + newTradeValue) / totalNewQty;
+            db.avgRates[baseCurr] = newAvgRate; 
+        }
     }
 
     const logData = { baseCurr: baseCurr, baseAmt: baseAmt, quoteCurr: quoteCurr, quoteAmt: quoteAmt, direction: fxDirection, profit: profit, isInternal: false };
     const actionText = fxDirection === 'Buy' ? `Buy ${baseAmt} ${baseCurr}` : `Sell ${baseAmt} ${baseCurr}`;
 
     if (exType === 'internal') {
-        // --- معامله با مشتری حساب‌دار ---
         const cust = document.getElementById('exCustomer').value; 
-        if (!cust) { alert('مشتری انتخاب نشده است'); return; }
+        if (!cust) { alert('مشتری انتخاب نشده'); return; }
         const id1 = Date.now(); const id2 = Date.now() + 1;
 
         if (fxDirection === 'Buy') {
-            // خرید از مشتری
             db.accounts[cust].push({ id: id1, date: Date.now(), desc: `فروش ارز به صرافی (${actionText} @ ${rate})`, curr: baseCurr, debit: baseAmt, credit: 0, type: 'debit' });
             db.accounts[cust].push({ id: id2, date: Date.now(), desc: `دریافت معادل (${quoteAmt} ${quoteCurr})`, curr: quoteCurr, debit: 0, credit: quoteAmt, type: 'credit' });
         } else {
-            // فروش به مشتری
             db.accounts[cust].push({ id: id1, date: Date.now(), desc: `خرید ارز از صرافی (${actionText} @ ${rate})`, curr: baseCurr, debit: 0, credit: baseAmt, type: 'credit' });
             db.accounts[cust].push({ id: id2, date: Date.now(), desc: `پرداخت معادل (${quoteAmt} ${quoteCurr})`, curr: quoteCurr, debit: quoteAmt, credit: 0, type: 'debit' });
         }
@@ -2916,20 +3013,16 @@ async function submitExchange() {
         logTx('صرافی (داخلی)', `Int FX ${cust}`, `${actionText}`, 'EXCHANGE', logData);
 
     } else {
-        // --- معامله نقدی ---
         if (fxDirection === 'Buy') { 
-            // خرید: دلار میاد، افغانی میره
-            if ((db.cashBox[quoteCurr] || 0) + (db.initialCapital[quoteCurr] || 0) < quoteAmt) { alert(`موجودی صندوق ${quoteCurr} کافی نیست!`); return; } 
+            if ((db.cashBox[quoteCurr] || 0) + (db.initialCapital[quoteCurr] || 0) < quoteAmt) { alert(`موجودی صندوق ${quoteCurr} کم است!`); return; } 
             db.cashBox[baseCurr] = (db.cashBox[baseCurr] || 0) + baseAmt; 
             db.cashBox[quoteCurr] = (db.cashBox[quoteCurr] || 0) - quoteAmt; 
         } else { 
-            // فروش: دلار میره، افغانی میاد
-            if ((db.cashBox[baseCurr] || 0) + (db.initialCapital[baseCurr] || 0) < baseAmt) { alert(`موجودی صندوق ${baseCurr} کافی نیست!`); return; } 
+            if ((db.cashBox[baseCurr] || 0) + (db.initialCapital[baseCurr] || 0) < baseAmt) { alert(`موجودی صندوق ${baseCurr} کم است!`); return; } 
             db.cashBox[baseCurr] = (db.cashBox[baseCurr] || 0) - baseAmt; 
             db.cashBox[quoteCurr] = (db.cashBox[quoteCurr] || 0) + quoteAmt; 
         }
         
-        // *** اصلاح مهم: سود به ارز دوم (مثل افغانی) اضافه میشود ***
         if (profit !== 0 && fxDirection === 'Sell') { 
             fxProfit[quoteCurr] = (fxProfit[quoteCurr] || 0) + profit; 
         }
@@ -2939,10 +3032,16 @@ async function submitExchange() {
     await saveDB(); 
     renderDashboard(); 
     
-    // پاک کردن کادرها بعد از انجام
     document.getElementById('exCostBasis').value = '';
     document.getElementById('estimatedProfit').innerText = '---';
-    alert('معامله با موفقیت انجام شد.');
+    
+    // نمایش پیام فارسی سود یا ضرر
+    let msg = 'معامله انجام شد.';
+    if(profit !== 0 && fxDirection === 'Sell') {
+        if(profit > 0) msg += `\n✅ سود این معامله: ${profit.toLocaleString()} ${quoteCurr}`;
+        else msg += `\n❌ زیان این معامله: ${profit.toLocaleString()} ${quoteCurr}`;
+    }
+    alert(msg);
 }
 
 function printLedger() { 
@@ -3137,7 +3236,19 @@ function exportLedgerToExcel() {
     XLSX.writeFile(wb, `صورتحساب_${c}.xlsx`);
 }
 // --- پایان کدهای اکسل ---
-async function setInitialCapital() { if (currentUser.perms.admin) { db.currencies.forEach(c => db.initialCapital[c] = parseFloat(document.getElementById(`initCap_${c}`).value) || 0); await saveDB(); alert('Capital Saved.'); renderDashboard(); } }
+async function setInitialCapital() { 
+    if (currentUser.perms.admin) { 
+        if (!db.avgRates) db.avgRates = {}; 
+        db.currencies.forEach(c => {
+            db.initialCapital[c] = parseFloat(document.getElementById(`initCap_${c}`).value) || 0;
+            const rateInput = document.getElementById(`initRate_${c}`);
+            if(rateInput) { db.avgRates[c] = parseFloat(rateInput.value) || 0; }
+        });
+        await saveDB(); 
+        alert('سرمایه و نرخ خرید ذخیره شد.'); 
+        renderDashboard(); 
+    } 
+}
 async function changeMyPass() { const p = document.getElementById('myNewPass').value; if (p.length < 4) return; const u = db.users.find(x => x.u === currentUser.u); u.salt = generateSalt(); u.hash = hashPassword(p, u.salt); await saveDB(); alert('Password Changed.'); }
 async function addUser() { const u = document.getElementById('newUName').value, p = document.getElementById('newUPass').value; if (u && p) { const s = generateSalt(); db.users.push({ u, salt: s, hash: hashPassword(p, s), perms: { hawala: document.getElementById('perm_hawala').checked, exchange: document.getElementById('perm_exchange').checked, accounts: document.getElementById('perm_accounts').checked, tt: document.getElementById('perm_tt').checked, admin: document.getElementById('perm_admin').checked } }); await saveDB(); renderUserManagement(); alert("User Added."); } }
 function renderUserManagement() { document.getElementById('userListManage').innerHTML = db.users.map(u => `<div>${u.u} <button onclick="delUser('${u.u}')" class="btn btn-red" style="padding:2px 5px; font-size:10px">Delete</button></div>`).join(''); }
