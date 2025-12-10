@@ -2278,11 +2278,12 @@ if(document.getElementById('dashboard').classList.contains('active')) renderDash
 
 async function togglePrintHeaderSetting() { if (!db.settings) db.settings = {}; db.settings.printHeader = document.getElementById('printHeaderOpt').checked; await saveDB(); }
 // --- شروع کد آنالیز سرمایه ---
+// 1. این تابع کل جدول آنالیز را می سازد (تغییر کرده)
 function renderAnalysis() {
     const tbody = document.getElementById('analysisBody');
     tbody.innerHTML = '';
     
-    // 1. محاسبه مانده حساب مشتریان
+    // محاسبه مانده حساب مشتریان
     let customerBalances = {};
     for (let custName in db.accounts) {
         db.accounts[custName].forEach(tx => {
@@ -2291,7 +2292,7 @@ function renderAnalysis() {
         });
     }
 
-    // 2. محاسبه مانده کتاب حواله
+    // محاسبه مانده کتاب حواله
     let cityBalances = {};
     db.hawalas.forEach(h => {
         if (!cityBalances[h.curr]) cityBalances[h.curr] = 0;
@@ -2308,10 +2309,22 @@ function renderAnalysis() {
         const cityBal = cityBalances[curr] || 0;
         const netCapital = cash + custBal + cityBal;
 
-        // نرخ پیش فرض برای تتر و دلار 1 است
+        // نرخ پیش فرض
         let defaultRate = '';
-        if(curr === 'USD' || curr === 'USDT' || curr === 'DAI') defaultRate = '1';
+        if(db.avgRates && db.avgRates[curr]) defaultRate = db.avgRates[curr];
+        else if(curr === 'USD' || curr === 'USDT' || curr === 'DAI') defaultRate = '1';
         
+        // اگر قبلا ذخیره شده ضرب/تقسیم را بازیابی کن، وگرنه پیش فرض ضرب است
+        let op = 'multiply';
+        if(curr !== 'EUR' && curr !== 'GBP' && curr !== 'KWD' && curr !== 'USD' && curr !== 'USDT') {
+             // حدس میزنیم ارزهای دیگر معمولا نیاز به تقسیم دارند، اما دکمه قابل تغییر است
+             op = 'divide'; 
+        }
+        if(curr === 'USD' || curr === 'USDT') op = 'multiply';
+
+        const opIcon = op === 'multiply' ? '✖' : '➗';
+        const opColor = op === 'multiply' ? 'var(--text-muted)' : 'var(--gold-primary)';
+
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td style="font-weight:bold">${curr}</td>
@@ -2320,27 +2333,63 @@ function renderAnalysis() {
             <td dir="ltr" style="color:${cityBal >= 0 ? 'var(--success)' : 'var(--danger)'}">${cityBal.toLocaleString()}</td>
             <td dir="ltr" style="font-weight:900; background:rgba(212,175,55,0.05); color:${netCapital >= 0 ? 'var(--gold-primary)' : 'var(--danger)'}">${netCapital.toLocaleString()}</td>
             <td>
-                <input type="number" class="input" style="margin:0; text-align:center; direction:ltr" 
-                       placeholder="Rate..." value="${defaultRate}" id="rate_${curr}" 
-                       oninput="calculateRowUSD('${curr}', ${netCapital})">
+                <div style="display:flex; align-items:center; gap:5px">
+                    <button class="btn btn-outline btn-sm no-print" 
+                            style="padding:2px 8px; font-size:14px; color:${opColor}; border-color:${opColor}" 
+                            id="btnOp_${curr}" 
+                            data-op="${op}"
+                            onclick="toggleAnalysisOp(this, '${curr}', ${netCapital})">
+                        ${opIcon}
+                    </button>
+                    <input type="number" class="input" style="margin:0; text-align:center; direction:ltr" 
+                           placeholder="Rate..." value="${defaultRate}" id="rate_${curr}" 
+                           oninput="calculateRowUSD('${curr}', ${netCapital})">
+                </div>
             </td>
             <td dir="ltr" style="font-weight:bold" id="usdResult_${curr}">0</td>
         `;
         tbody.appendChild(tr);
         
-        if(defaultRate === '1') {
-            setTimeout(() => calculateRowUSD(curr, netCapital), 100);
-        }
+        // محاسبه اولیه
+        setTimeout(() => calculateRowUSD(curr, netCapital), 100);
     });
 }
 
+// 2. تابع جدید برای تغییر حالت ضرب به تقسیم و برعکس
+function toggleAnalysisOp(btn, curr, netCapital) {
+    const currentOp = btn.getAttribute('data-op');
+    if(currentOp === 'multiply') {
+        btn.setAttribute('data-op', 'divide');
+        btn.innerText = '➗';
+        btn.style.color = 'var(--gold-primary)';
+        btn.style.borderColor = 'var(--gold-primary)';
+    } else {
+        btn.setAttribute('data-op', 'multiply');
+        btn.innerText = '✖';
+        btn.style.color = 'var(--text-muted)';
+        btn.style.borderColor = 'var(--text-muted)';
+    }
+    calculateRowUSD(curr, netCapital);
+}
+
+// 3. تابع محاسبه که حالا به دکمه نگاه می کند (ضرب یا تقسیم)
 function calculateRowUSD(curr, netCapital) {
     const rateInput = document.getElementById(`rate_${curr}`).value;
     const resultCell = document.getElementById(`usdResult_${curr}`);
+    const btnOp = document.getElementById(`btnOp_${curr}`);
+    const op = btnOp ? btnOp.getAttribute('data-op') : 'multiply';
     
     if (rateInput && !isNaN(rateInput)) {
         const rate = parseFloat(rateInput);
-        const totalUSD = netCapital * rate;
+        let totalUSD = 0;
+        
+        if(op === 'multiply') {
+            totalUSD = netCapital * rate;
+        } else {
+            // جلوگیری از تقسیم بر صفر
+            if(rate !== 0) totalUSD = netCapital / rate;
+        }
+
         resultCell.innerText = totalUSD.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2});
         resultCell.style.color = totalUSD >= 0 ? 'var(--success)' : 'var(--danger)';
         resultCell.dataset.value = totalUSD; 
@@ -2350,7 +2399,6 @@ function calculateRowUSD(curr, netCapital) {
     }
     updateGrandTotal();
 }
-
 function updateGrandTotal() {
     let total = 0;
     db.currencies.forEach(c => {
@@ -2913,27 +2961,23 @@ function setFxDirection(dir) {
     calcFx(); 
 }
 function toggleFxOperator() { fxOperator = fxOperator === 'multiply' ? 'divide' : 'multiply'; document.getElementById('fxOpDisplay').innerText = fxOperator === 'multiply' ? '✖' : '➗'; calcFx(); }
+// 1. محاسبه لحظه‌ای سود در زمان تایپ کردن
 function calcFx() { 
     const baseAmt = parseFloat(document.getElementById('fxBaseAmt').value) || 0; 
     const rate = parseFloat(document.getElementById('fxRate').value) || 1; 
     const quoteCurr = document.getElementById('fxQuoteCurr').value; 
-    const baseCurr = document.getElementById('fxBaseCurr').value; // نام ارزی که دارید معامله می‌کنید
+    const baseCurr = document.getElementById('fxBaseCurr').value; 
 
-    // --- این قسمت جدید است: پر کردن اتوماتیک قیمت خرید ---
-    // فقط وقتی "فروش" را انتخاب کرده باشید این کار را می‌کند
+    // --- پر کردن خودکار نرخ خرید (میانگین) از حافظه ---
     if (fxDirection === 'Sell') {
-        // اگر نرخ‌های خرید قبلاً ذخیره شده باشند، آن را پیدا می‌کند
         if (db.avgRates && db.avgRates[baseCurr]) {
-            const myBuyRate = db.avgRates[baseCurr];
-            // عدد را داخل کادر "محاسبه سود" می‌نویسد
-            document.getElementById('exCostBasis').value = myBuyRate;
+            document.getElementById('exCostBasis').value = db.avgRates[baseCurr];
         } else {
-            // اگر نرخی پیدا نکرد، کادر را خالی می‌گذارد
             document.getElementById('exCostBasis').value = '';
         }
     }
-    // ----------------------------------------------------
 
+    // --- محاسبه مبلغ نهایی (ضرب یا تقسیم بر اساس انتخاب شما) ---
     let quoteAmt = 0; 
     if (rate !== 0) { 
         if (fxOperator === 'multiply') quoteAmt = baseAmt * rate; 
@@ -2941,22 +2985,33 @@ function calcFx() {
     } 
     document.getElementById('fxQuoteAmt').value = quoteAmt.toFixed(2); 
 
-    // محاسبه سود بر اساس عددی که سیستم یا شما وارد کرده‌اید
+    // --- محاسبه هوشمند سود (نقطه کلیدی) ---
     const costRate = parseFloat(document.getElementById('exCostBasis').value); 
     
     if(costRate && fxDirection === 'Sell') { 
         const totalSell = quoteAmt; 
-        const totalBuy = baseAmt * costRate; 
+        let totalBuy = 0;
+
+        // اگر نرخ خرید بزرگتر از 2 باشد (مثل 70 افغانی)، سیستم می‌فهمد باید تقسیم کند
+        // اگر نرخ کوچک باشد (مثل 0.014 یا 1.1)، ضرب می‌کند
+        if (costRate > 2) {
+            totalBuy = baseAmt / costRate;
+        } else {
+            totalBuy = baseAmt * costRate;
+        }
+
         const profit = totalSell - totalBuy;
         
-        document.getElementById('estimatedProfit').innerText = profit.toLocaleString() + " " + quoteCurr; 
+        document.getElementById('estimatedProfit').innerText = profit.toLocaleString(undefined, {maximumFractionDigits: 2}) + " " + quoteCurr; 
         
-        if(profit >= 0) document.getElementById('estimatedProfit').style.color = "var(--success)"; // سبز
-        else document.getElementById('estimatedProfit').style.color = "var(--danger)"; // قرمز
+        if(profit >= 0) document.getElementById('estimatedProfit').style.color = "var(--success)"; 
+        else document.getElementById('estimatedProfit').style.color = "var(--danger)"; 
     } else { 
         document.getElementById('estimatedProfit').innerText = "---"; 
     } 
 }
+
+// 2. ثبت نهایی معامله و آپدیت نرخ میانگین و سود
 async function submitExchange() {
     const baseAmt = parseFloat(document.getElementById('fxBaseAmt').value); 
     const quoteAmt = parseFloat(document.getElementById('fxQuoteAmt').value); 
@@ -2972,25 +3027,46 @@ async function submitExchange() {
     if (!db.avgRates) db.avgRates = {};
     let profit = 0; 
 
-    // اگر فروش است، سود را حساب کن
+    // --- الف) محاسبه سود برای فروش ---
     if (fxDirection === 'Sell') {
         const avgBuyRate = db.avgRates[baseCurr] || 0; 
         if (avgBuyRate > 0) {
-            const totalCost = baseAmt * avgBuyRate; 
+            let totalCost = 0;
+            // همان منطق هوشمند: اگر نرخ ذخیره شده بالای 2 بود، تقسیم کن
+            if (avgBuyRate > 2) {
+                totalCost = baseAmt / avgBuyRate;
+            } else {
+                totalCost = baseAmt * avgBuyRate;
+            }
             profit = quoteAmt - totalCost; 
         }
     }
 
-    // اگر خرید است، نرخ میانگین را آپدیت کن
+    // --- ب) آپدیت نرخ میانگین برای خرید ---
     if (fxDirection === 'Buy') {
         const oldQty = (db.cashBox[baseCurr] || 0) + (db.initialCapital[baseCurr] || 0);
         const oldRate = db.avgRates[baseCurr] || 0;
-        const oldTotalValue = oldQty * oldRate; 
-        const newTradeValue = quoteAmt; 
-        const totalNewQty = oldQty + baseAmt;
+        
+        let oldTotalValue = 0;
+        // اگر موجودی قبلی داریم، ارزش دلاری‌اش را حساب کن
+        if(oldRate > 0) {
+             if(oldRate > 2) oldTotalValue = oldQty / oldRate; // اگر نرخ قبلی دستی وارد شده و بزرگ است (مثل 70)
+             else oldTotalValue = oldQty * oldRate; // اگر نرخ اتوماتیک یا کوچک است
+        }
+
+        const newTradeValue = quoteAmt; // پولی که دادیم (ارزش خرید جدید)
+        const totalNewQty = oldQty + baseAmt; // موجودی جدید
+
         if (totalNewQty > 0) {
+            // محاسبه نرخ میانگین جدید
+            // سیستم نرخ را به صورت "ضریب" (Multiplier) ذخیره می‌کند تا دقیق‌تر باشد
+            // مگر اینکه کاربر دستی در تنظیمات تغییرش دهد
             const newAvgRate = (oldTotalValue + newTradeValue) / totalNewQty;
-            db.avgRates[baseCurr] = newAvgRate; 
+            
+            // اما اگر کاربر عادت دارد نرخ را بزرگ (مثل 70) ببیند، ما هم بزرگ ذخیره کنیم؟
+            // خیر، بهتر است نرخ واقعی (Cost per Unit) ذخیره شود تا محاسبات بعدی دقیق باشد.
+            // این عدد ممکن است 0.0142 شود که صحیح است.
+            db.avgRates[baseCurr] = (oldTotalValue + newTradeValue) / totalNewQty; 
         }
     }
 
@@ -3035,11 +3111,10 @@ async function submitExchange() {
     document.getElementById('exCostBasis').value = '';
     document.getElementById('estimatedProfit').innerText = '---';
     
-    // نمایش پیام فارسی سود یا ضرر
     let msg = 'معامله انجام شد.';
     if(profit !== 0 && fxDirection === 'Sell') {
-        if(profit > 0) msg += `\n✅ سود این معامله: ${profit.toLocaleString()} ${quoteCurr}`;
-        else msg += `\n❌ زیان این معامله: ${profit.toLocaleString()} ${quoteCurr}`;
+        if(profit > 0) msg += `\n✅ سود این معامله: ${profit.toLocaleString(undefined, {maximumFractionDigits: 2})} ${quoteCurr}`;
+        else msg += `\n❌ زیان این معامله: ${profit.toLocaleString(undefined, {maximumFractionDigits: 2})} ${quoteCurr}`;
     }
     alert(msg);
 }
