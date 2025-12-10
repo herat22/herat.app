@@ -231,7 +231,30 @@ html[dir="ltr"] .submenu {
     from { opacity: 0; transform: translateY(-5px); }
     to { opacity: 1; transform: translateY(0); }
 }
-/* --- پایان کدهای جدید --- */
+/* --- شروع کدهای جدید تنظیمات --- */
+#modalSettings .modal-content {
+    width: 95% !important;
+    height: 90% !important;
+    max-width: 1200px !important;
+    max-height: 90vh !important;
+    padding: 0 !important;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg-body);
+}
+.settings-container { display: flex; flex: 1; height: 100%; overflow: hidden; }
+.settings-sidebar { width: 260px; background: rgba(0,0,0,0.15); border-left: 1px solid var(--gold-border); display: flex; flex-direction: column; padding: 20px 10px; overflow-y: auto; }
+.settings-menu-btn { text-align: right; padding: 15px 20px; border-radius: 12px; margin-bottom: 8px; cursor: pointer; font-weight: bold; color: var(--text-muted); transition: 0.3s; border: 1px solid transparent; display: flex; align-items: center; gap: 10px; }
+.settings-menu-btn:hover { background: var(--gold-faint); color: var(--gold-primary); }
+.settings-menu-btn.active { background: var(--gold-primary); color: #000; box-shadow: 0 5px 15px var(--gold-shadow); }
+.settings-content-area { flex: 1; padding: 40px; overflow-y: auto; background: rgba(0,0,0,0.05); }
+.settings-tab { display: none; animation: fadeIn 0.4s; }
+.settings-tab.active { display: block; }
+.setting-card { background: var(--bg-card); border: 1px solid var(--gold-border); border-radius: 16px; padding: 30px; max-width: 800px; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+.setting-header-large { font-size: 24px; font-weight: 900; color: var(--gold-primary); margin-bottom: 10px; border-bottom: 2px solid var(--gold-border); padding-bottom: 15px; }
+.city-detail-group { background: rgba(212, 175, 55, 0.05); padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px dashed var(--gold-border); }
+/* --- پایان کدهای جدید تنظیمات --- */
 </style>
 </head>
 <body>
@@ -1075,133 +1098,208 @@ html[dir="ltr"] .submenu {
 </div>
 <div id="modalSettings" class="modal">
     <div class="modal-content">
-        <span class="close-icon" onclick="closeModal('modalSettings')">&times;</span>
-        <div class="card-header" data-i18n="header_settings">تنظیمات سیستم</div>
-        <div style="border-bottom:1px solid var(--gold-border); padding-bottom:10px; margin-bottom:10px">
-    <label class="label" style="color:var(--gold-primary)">پروفایل و مشخصات صرافی (جهت چاپ)</label>
-    <div class="grid-2">
-        <div>
-            <label class="label">نام صرافی</label>
-            <input id="setCompName" class="input" placeholder="مثلاً: صرافی برادران...">
-        </div>
-        <div>
-            <label class="label">شعار تبلیغاتی</label>
-            <input id="setCompSlogan" class="input" placeholder="سریع، مطمئن...">
-        </div>
-    </div>
-    <div class="grid-2">
-        <div>
-            <label class="label">شماره تماس</label>
-            <input id="setCompPhone" class="input">
-        </div>
-        <div>
-            <label class="label">آدرس دفتر</label>
-            <input id="setCompAddress" class="input">
-        </div>
-    </div>
-    <div>
-        <label class="label">پیام تشکر (زیر فاکتور)</label>
-        <input id="setCompFooter" class="input" placeholder="از انتخاب شما متشکریم">
-    </div>
-    <button class="btn btn-green" style="width:100%; margin-top:10px" onclick="saveCompanyProfile()">
-        ثبت مشخصات شرکت
-    </button>
-</div>
-        <div style="border-bottom:1px solid var(--gold-border); padding-bottom:10px; margin-bottom:10px">
-            <label class="label" style="color:var(--gold-primary)" data-i18n="lbl_print_settings">تنظیمات چاپ</label>
-            <div style="display:flex; align-items:center; gap:10px; background:rgba(212,175,55,0.05); padding:10px; border-radius:8px; border:1px solid var(--gold-border)">
-                <input type="checkbox" id="printHeaderOpt" onchange="togglePrintHeaderSetting()">
-                <label for="printHeaderOpt" style="font-size:13px; cursor:pointer" data-i18n="lbl_print_header_opt">نمایش «نام شرکت» در سربرگ تمام چاپ‌ها</label>
-            </div>
+        <div style="padding: 15px 25px; border-bottom: 1px solid var(--gold-border); display:flex; justify-content:space-between; align-items:center; background: var(--bg-sidebar);">
+            <span style="font-size:18px; font-weight:900; color:var(--gold-primary)">⚙️ تنظیمات سیستم (System Settings)</span>
+            <span class="close-icon" onclick="closeModal('modalSettings')" style="position:static; font-size:28px;">&times;</span>
         </div>
 
-        <div id="settingsAdminSection" style="display:none">
-            <div style="border-bottom:1px solid var(--gold-border); padding-bottom:10px; margin-bottom:10px">
-                <label class="label" data-i18n="lbl_initial_capital_set">سرمایه اولیه (جهت محاسبه سود/زیان)</label>
-                <div id="initialCapitalInputs"></div>
-                <button class="btn btn-blue" style="width:100%; margin-top:10px" onclick="setInitialCapital()">
-                    <span data-i18n="btn_save_capital">ثبت سرمایه اولیه</span>
-                </button>
-            </div>
-            
-            <div style="border-bottom:1px solid var(--gold-border); padding-bottom:10px; margin-bottom:10px">
-                <label class="label" data-i18n="lbl_user_mgmt">مدیریت کاربران</label>
-                <div class="grid-2" style="gap:10px">
-                    <input id="newUName" class="input" placeholder="Username">
-                    <input id="newUPass" class="input" placeholder="Password">
+        <div class="settings-container">
+            <div class="settings-sidebar">
+                <div class="settings-menu-btn active" onclick="switchSettingsTab('tab-profile', this)">🏢 پروفایل صرافی</div>
+                <div class="settings-menu-btn" onclick="switchSettingsTab('tab-print', this)">🖨 تنظیمات چاپ</div>
+                
+                <div id="adminMenuSection" style="display:none; margin-top:20px; border-top:1px dashed var(--gold-border); padding-top:10px">
+                    <div style="font-size:11px; color:var(--text-muted); margin-bottom:10px; padding-right:10px">مدیریت (Admin)</div>
+                    <div class="settings-menu-btn" onclick="switchSettingsTab('tab-capital', this)">💰 سرمایه اولیه</div>
+                    <div class="settings-menu-btn" onclick="switchSettingsTab('tab-currency', this)">💵 مدیریت ارزها</div>
+                    <div class="settings-menu-btn" onclick="switchSettingsTab('tab-cities', this)">🏙 مدیریت شهرها (کتاب)</div>
+                    <div class="settings-menu-btn" onclick="switchSettingsTab('tab-users', this)">👥 مدیریت کاربران</div>
+                    <div class="settings-menu-btn" style="color:var(--danger)" onclick="switchSettingsTab('tab-reset', this)">⚠️ ریستارت برنامه</div>
                 </div>
-                <label class="label" style="margin-top:5px; font-weight:600" data-i18n="lbl_permissions">سطوح دسترسی:</label>
-                <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:10px; background:rgba(0,0,0,0.2); padding:10px; border-radius:8px; border:1px solid var(--gold-border)">
-                    <label style="font-size:13px"><input type="checkbox" id="perm_hawala" checked> <span data-i18n="perm_hawala">حواله‌جات</span></label>
-                    <label style="font-size:13px"><input type="checkbox" id="perm_exchange" checked> <span data-i18n="perm_exchange">خرید/فروش</span></label>
-                    <label style="font-size:13px"><input type="checkbox" id="perm_accounts"> <span data-i18n="perm_accounts">حساب مشتریان</span></label>
-                    <label style="font-size:13px"><input type="checkbox" id="perm_tt"> <span data-i18n="perm_tt">انتقال ارز (TT)</span></label>
-                    <label style="font-size:13px"><input type="checkbox" id="perm_admin" onchange="toggleAdminAccess(this)"> <span style="color:var(--gold-primary)" data-i18n="perm_admin">دسترسی کامل (مدیر)</span></label>
+                
+                <div style="margin-top:auto">
+                    <div class="settings-menu-btn" onclick="switchSettingsTab('tab-password', this)">🔒 تغییر رمز عبور</div>
                 </div>
-                <button class="btn btn-green" style="width:100%" onclick="addUser()">
-                    <span data-i18n="btn_add_user">افزودن کاربر</span>
-                </button>
-                <div id="userListManage" style="margin-top:10px"></div>
             </div>
 
-            <div style="border-bottom:1px solid var(--gold-border); padding-bottom:10px; margin-bottom:10px">
-                <label class="label" data-i18n="lbl_add_city">افزودن شهر (کتاب حواله)</label>
-                <div style="display:flex; gap:5px">
-                    <input id="newCityName" class="input" placeholder="Name">
-                    <input id="newCityCode" class="input" placeholder="Code (MZR)" style="text-transform:uppercase; width:80px">
-                    <button class="btn btn-gold" onclick="addCity()">
-                        <span data-i18n="btn_add">افزودن</span>
-                    </button>
-                </div>
-                <div style="margin-top:15px; border-top:1px dashed var(--gold-border); padding-top:10px">
-                    <label class="label" style="color:var(--danger)" data-i18n="lbl_delete_city">حذف شهر (Delete City)</label>
-                    <div style="display:flex; gap:5px; flex-direction:column">
-                        <select id="cityToDelete" class="input" onchange="checkCityForDelete()"></select>
-                        <div id="transferCitySection" style="display:none; background:rgba(212,175,55,0.1); padding:10px; border-radius:8px;">
-                            <label class="label" data-i18n="msg_city_has_data">توجه: این شهر دارای حواله است. مقصد انتقال:</label>
-                            <select id="cityTransferTarget" class="input"></select>
+            <div class="settings-content-area">
+                
+                <div id="tab-profile" class="settings-tab active">
+                    <div class="setting-card">
+                        <div class="setting-header-large">پروفایل و مشخصات صرافی</div>
+                        <p style="color:var(--text-muted); margin-bottom:20px; font-size:13px;">این اطلاعات در سربرگ تمام رسیدها و فاکتورها چاپ می‌شود.</p>
+                        
+                        <div class="grid-2">
+                            <div>
+                                <label class="label">نام صرافی (بزرگ در سربرگ)</label>
+                                <input id="setCompName" class="input" placeholder="مثلاً: صرافی برادران...">
+                            </div>
+                            <div>
+                                <label class="label">شعار تبلیغاتی (زیر نام)</label>
+                                <input id="setCompSlogan" class="input" placeholder="سریع، مطمئن...">
+                            </div>
                         </div>
-                        <button id="btnDeleteCity" class="btn btn-red" onclick="deleteCityProcess()">
-                            <span data-i18n="btn_delete_city">حذف شهر</span>
+                        <div class="grid-2">
+                            <div>
+                                <label class="label">شماره‌های تماس</label>
+                                <input id="setCompPhone" class="input" placeholder="0799...">
+                            </div>
+                            <div>
+                                <label class="label">آدرس دفتر مرکزی</label>
+                                <input id="setCompAddress" class="input" placeholder="هرات، چوک گلها...">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="label">پیام تشکر (پاورقی فاکتور)</label>
+                            <input id="setCompFooter" class="input" placeholder="از انتخاب شما متشکریم">
+                        </div>
+                        <button class="btn btn-gold" style="width:100%; padding:15px; margin-top:15px" onclick="saveCompanyProfile()">
+                            ثبت و ذخیره مشخصات (Save)
+                        </button>
+                    </div>
+                </div>
+
+                <div id="tab-print" class="settings-tab">
+                    <div class="setting-card">
+                        <div class="setting-header-large">تنظیمات چاپ (Print Options)</div>
+                        
+                        <div style="display:flex; align-items:center; gap:15px; background:rgba(255,255,255,0.05); padding:20px; border-radius:12px; border:1px solid var(--gold-border)">
+                            <input type="checkbox" id="printHeaderOpt" style="width:25px; height:25px; cursor:pointer" onchange="togglePrintHeaderSetting()">
+                            <div>
+                                <label for="printHeaderOpt" style="font-size:16px; font-weight:bold; cursor:pointer; color:var(--text-main)">نمایش «سربرگ شرکت» در چاپ‌ها</label>
+                                <div style="font-size:12px; color:var(--text-muted); margin-top:5px;">با فعال کردن این گزینه، نام و لوگوی صرافی شما در بالای تمام رسیدها چاپ می‌شود. اگر از کاغذ سربرگ‌دار آماده استفاده می‌کنید، این گزینه را خاموش کنید.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-capital" class="settings-tab">
+                    <div class="setting-card">
+                        <div class="setting-header-large">سرمایه اولیه (Initial Capital)</div>
+                        <p style="color:var(--text-muted); margin-bottom:20px;">این مبالغ فقط جهت محاسبه سود و زیان استفاده می‌شود و به موجودی صندوق اضافه نمی‌شود.</p>
+                        <div id="initialCapitalInputs"></div>
+                        <button class="btn btn-blue" style="width:100%; margin-top:15px" onclick="setInitialCapital()">
+                            ثبت سرمایه اولیه
+                        </button>
+                    </div>
+                </div>
+
+                <div id="tab-currency" class="settings-tab">
+                    <div class="setting-card">
+                        <div class="setting-header-large">مدیریت ارزها</div>
+                        <div style="background:rgba(0,0,0,0.2); padding:20px; border-radius:12px; margin-bottom:20px">
+                            <label class="label" style="color:var(--success)">افزودن ارز جدید</label>
+                            <div style="display:flex; gap:10px">
+                                <input id="newCurrCode" class="input" placeholder="Code (e.g. TOMAN)" style="margin-bottom:0">
+                                <button class="btn btn-green" onclick="addCurrency()">افزودن</button>
+                            </div>
+                        </div>
+                        <div style="background:rgba(255,0,0,0.1); padding:20px; border-radius:12px;">
+                            <label class="label" style="color:var(--danger)">حذف ارز</label>
+                            <div style="display:flex; gap:10px">
+                                <select id="currToDelete" class="input" style="margin-bottom:0"></select>
+                                <button class="btn btn-red" onclick="deleteCurrency()">حذف</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-cities" class="settings-tab">
+                    <div class="setting-card">
+                        <div class="setting-header-large">مدیریت شهرها و نمایندگان</div>
+                        <p style="color:var(--gold-primary); font-size:13px; margin-bottom:15px">
+                            * اطلاعات وارد شده در اینجا (نام صرافی/نماینده) مستقیماً در رسید چاپی حواله درج می‌شود.
+                        </p>
+                        
+                        <div class="city-detail-group">
+                            <div class="grid-2">
+                                <div>
+                                    <label class="label">نام شهر</label>
+                                    <input id="newCityName" class="input" placeholder="مثلاً: مزارشریف">
+                                </div>
+                                <div>
+                                    <label class="label">کد شهر (مخفف)</label>
+                                    <input id="newCityCode" class="input" placeholder="MZR" style="text-transform:uppercase">
+                                </div>
+                            </div>
+                            <div class="grid-2">
+                                <div>
+                                    <label class="label" style="color:var(--gold-primary)">نام نماینده / صرافی همکار</label>
+                                    <input id="newCityRep" class="input" placeholder="مثلاً: صرافی صداقت (حاجی احمد)">
+                                </div>
+                                <div>
+                                    <label class="label" style="color:var(--gold-primary)">آدرس / تلفن نماینده</label>
+                                    <input id="newCityContact" class="input" placeholder="مارکت... / 0799...">
+                                </div>
+                            </div>
+                            <button class="btn btn-gold" style="width:100%" onclick="addCity()">
+                                ثبت شهر و مشخصات نماینده
+                            </button>
+                        </div>
+
+                        <div style="margin-top:30px; border-top:1px dashed var(--gold-border); padding-top:20px">
+                            <label class="label" style="color:var(--danger)">حذف شهر</label>
+                            <div style="display:flex; gap:10px; align-items:flex-start">
+                                <div style="flex:1">
+                                    <select id="cityToDelete" class="input" onchange="checkCityForDelete()"></select>
+                                    <div id="transferCitySection" style="display:none; background:rgba(255,82,82,0.1); padding:10px; border-radius:8px; margin-top:5px">
+                                        <label class="label" style="color:var(--danger)">انتقال اطلاعات به:</label>
+                                        <select id="cityTransferTarget" class="input"></select>
+                                    </div>
+                                </div>
+                                <button id="btnDeleteCity" class="btn btn-red" onclick="deleteCityProcess()" style="height:45px">حذف</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-users" class="settings-tab">
+                    <div class="setting-card">
+                        <div class="setting-header-large">مدیریت کاربران سیستم</div>
+                        <div class="grid-2" style="gap:10px">
+                            <input id="newUName" class="input" placeholder="نام کاربری (Username)">
+                            <input id="newUPass" class="input" placeholder="رمز عبور (Password)">
+                        </div>
+                        <label class="label">دسترسی‌ها:</label>
+                        <div style="display:flex; gap:15px; flex-wrap:wrap; margin-bottom:15px; background:rgba(0,0,0,0.2); padding:15px; border-radius:10px">
+                            <label><input type="checkbox" id="perm_hawala" checked> حواله</label>
+                            <label><input type="checkbox" id="perm_exchange" checked> صرافی</label>
+                            <label><input type="checkbox" id="perm_accounts"> حساب‌ها</label>
+                            <label><input type="checkbox" id="perm_tt"> TT</label>
+                            <label><input type="checkbox" id="perm_admin" onchange="toggleAdminAccess(this)"> <span style="color:var(--gold-primary); font-weight:bold">مدیر کل</span></label>
+                        </div>
+                        <button class="btn btn-green" style="width:100%" onclick="addUser()">افزودن کاربر جدید</button>
+                        
+                        <div style="margin-top:20px">
+                            <label class="label">لیست کاربران:</label>
+                            <div id="userListManage"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-reset" class="settings-tab">
+                    <div class="setting-card" style="border-color:var(--danger)">
+                        <div class="setting-header-large" style="color:var(--danger); border-color:var(--danger)">ریست فکتوری (Factory Reset)</div>
+                        <p style="color:var(--danger); font-weight:bold; margin-bottom:20px">
+                            هشدار: با زدن دکمه زیر، تمام اطلاعات حساب‌ها، حواله‌ها، مشتریان و گزارشات برای همیشه پاک می‌شود و قابل بازگشت نیست.
+                        </p>
+                        <button class="btn btn-red" style="width:100%; padding:20px; font-size:16px" onclick="resetData()">
+                            ⚠️ حذف تمام اطلاعات و شروع دوباره
+                        </button>
+                    </div>
+                </div>
+
+                <div id="tab-password" class="settings-tab">
+                    <div class="setting-card">
+                        <div class="setting-header-large">تغییر رمز عبور من</div>
+                        <input type="password" id="myNewPass" class="input" placeholder="رمز عبور جدید...">
+                        <button class="btn btn-blue" style="width:100%" onclick="changeMyPass()">
+                            تغییر رمز
                         </button>
                     </div>
                 </div>
             </div>
-
-            <div style="border-bottom:1px solid var(--gold-border); padding-bottom:10px; margin-bottom:10px">
-                <label class="label" data-i18n="lbl_currency_mgmt">مدیریت ارزها (افزودن و حذف)</label>
-                <div style="display:flex; gap:5px; margin-bottom:10px">
-                    <input id="newCurrCode" class="input" placeholder="Code (EURO)">
-                    <button class="btn btn-outline" onclick="addCurrency()">
-                        <span data-i18n="btn_add">افزودن</span>
-                    </button>
-                </div>
-                <div style="display:flex; gap:5px">
-                    <select id="currToDelete" class="input"></select>
-                    <button class="btn btn-red" onclick="deleteCurrency()">
-                        <span data-i18n="btn_delete">حذف</span>
-                    </button>
-                </div>
-            </div>
-
-            <div style="margin-top:20px; padding-top:15px; border-top:1px solid var(--gold-border);">
-                <label class="label" style="color:var(--danger)" data-i18n="lbl_reset_app">ریستارت برنامه (حذف تمام اطلاعات و مشتریان)</label>
-                <button class="btn btn-red" style="width:100%" onclick="resetData()">
-                    <span data-i18n="btn_full_reset">ریستارت کامل برنامه</span>
-                </button>
-            </div>
         </div>
-
-        <div>
-            <label class="label" data-i18n="lbl_change_pass">تغییر رمز عبور من</label>
-            <input type="password" id="myNewPass" class="input">
-            <button class="btn btn-blue" onclick="changeMyPass()">
-                <span data-i18n="btn_change_pass">تغییر رمز</span>
-            </button>
-        </div>
-        <button class="btn btn-red" style="width:100%; margin-top:20px" onclick="closeModal('modalSettings')">
-            <span data-i18n="btn_close">بستن (Esc)</span>
-        </button>
     </div>
 </div>
 <script>
@@ -2626,7 +2724,16 @@ async function deleteLog(time, logId) {
         await saveDB(); renderJournal(); renderDashboard(); alert(currentLang === 'fa' ? "بازگردانی شد." : "Reversed.");
     }
 }
-function openSettings() { updateUI(); openModal('modalSettings'); }
+function openSettings() { 
+    updateUI(); 
+    if(currentUser && currentUser.perms.admin) {
+        document.getElementById('adminMenuSection').style.display = 'block';
+    } else {
+        document.getElementById('adminMenuSection').style.display = 'none';
+    }
+    openModal('modalSettings'); 
+    switchSettingsTab('tab-profile', document.querySelector('.settings-menu-btn'));
+}
 
 function getNewHawalaNumber(cityCode, type) {
     if (!db.cityHawalaCounters) db.cityHawalaCounters = {};
@@ -2780,13 +2887,23 @@ function openEditHawalaModal(id) {
 }
 
 function printH(id) {
-    const h = db.hawalas.find(x => x.id === id); if (!h) { alert('Not Found'); return; }
-    const t = TRANSLATIONS[currentLang];
-    const typeText = h.type === 'Outgoing' ? (t.opt_outgoing || 'Outgoing') : (t.opt_incoming || 'Incoming');
-    const cityName = db.cities.find(c => c.code === h.cityBook)?.name || h.cityBook;
+    const h = db.hawalas.find(x => x.id === id); 
+    if (!h) { alert('حواله یافت نشد.'); return; }
+    
+    const typeText = h.type === 'Outgoing' ? 'حواله صادره (Out)' : 'حواله وارده (In)';
+    const cityObj = db.cities.find(c => c.code === h.cityBook);
+    const cityName = cityObj ? cityObj.name : h.cityBook;
+    
+    let repInfoHTML = '';
+    if (cityObj && (cityObj.rep || cityObj.contact)) {
+        const label = h.type === 'Outgoing' ? 'نماینده مقصد:' : 'صرافی فرستنده:';
+        repInfoHTML = `<div style="margin-top:10px; background:#f0f0f0; padding:5px; border:1px dashed #999; font-size:10pt;"><div style="font-weight:bold">${label} ${cityObj.rep || ''}</div><div style="font-size:9pt">${cityObj.contact || ''}</div></div>`;
+    }
+
+    const amtInWords = numberToPersianWords(h.amt) + " " + h.curr;
     const win = window.open('', '_blank', 'width=800,height=600');
-    const dir = t.dir;
-    win.document.write(`<html><head><title>${typeText}</title><style>@page{size:A5 landscape;margin:10mm}body{font-family:'Vazirmatn','Tahoma',sans-serif;direction:${dir};padding:0}.receipt{border:3px double #000;padding:15px}.info-item{border-bottom:1px dotted #999;display:flex;justify-content:space-between;margin-bottom:5px}</style></head><body>${getPrintHeaderHTML()}<div class="receipt"><div style="text-align:center;font-weight:bold;border-bottom:1px solid #000;padding-bottom:10px">${typeText} - ${h.displayId||h.id}</div><br><div class="info-item"><b>${t.th_reg_date || 'Date'}:</b><span>${new Date(h.regDate).toLocaleDateString(currentLang === 'fa' ? 'fa-IR' : 'en-US')}</span></div><div class="info-item"><b>${t.th_city_book || 'City'}:</b><span>${escapeHtml(cityName)}</span></div><div class="info-item"><b>${t.lbl_sender || 'Sender'}:</b><span>${escapeHtml(h.sender)}</span></div><div class="info-item"><b>${t.lbl_receiver || 'Receiver'}:</b><span>${escapeHtml(h.receiver)}</span></div><div style="border:2px solid #000;padding:10px;text-align:center;margin-top:15px;background:#f9f9f9"><div>${t.th_amount || 'Amount'}:</div><b dir="ltr" style="font-size:16pt">${h.amt.toLocaleString()} ${h.curr}</b></div></div></body></html>`);
+    
+    win.document.write(`<html><head><title>${typeText}</title><style>@page{size:A5 landscape;margin:10mm}body{font-family:'Vazirmatn',tahoma;direction:rtl;padding:0;margin:0;font-size:11pt;color:#000}.receipt{width:100%;max-width:95%;margin:0 auto;padding:15px;border:3px double #000;background:#ffffff}.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}.info-item{border-bottom:1px dotted #999;padding-bottom:5px;margin-bottom:5px;display:flex;justify-content:space-between}.info-item b{font-weight:bold}.amount-box{border:2px solid #000;padding:10px;text-align:center;margin-top:15px;background:#f9f9f9}.footer-grid{display:grid;grid-template-columns:1fr 1fr;margin-top:30px;text-align:center;font-size:10pt}</style></head><body>${getPrintHeaderHTML()}<div class="receipt"><div style="text-align:center;font-weight:bold;margin-bottom:15px;font-size:14pt;border-bottom:1px solid #000;padding-bottom:10px">رسید ${typeText} (کد: ${h.displayId || h.id})</div><div class="info-grid"><div class="info-item"><b>تاریخ:</b><span>${new Date(h.regDate).toLocaleDateString('fa-IR')}</span></div><div class="info-item"><b>طرف حساب:</b><span>${escapeHtml(cityName)}</span></div></div>${repInfoHTML}<div class="info-grid" style="margin-top:10px"><div class="info-item"><b>فرستنده:</b><span>${escapeHtml(h.sender)}</span></div><div class="info-item"><b>گیرنده:</b><span>${escapeHtml(h.receiver)}</span></div></div><div class="info-grid"><div class="info-item"><b>تلفن:</b><span>${escapeHtml(h.phone || '-')}</span></div><div class="info-item"><b>آیدی/تذکره:</b><span>${escapeHtml(h.idCard || '-')}</span></div></div><div class="amount-box"><div>مبلغ حواله:</div><b dir="ltr" style="font-size:16pt;">${h.amt.toLocaleString()} ${h.curr}</b><div style="font-weight:bold;margin-top:5px;font-size:12px">حروف: ${amtInWords}</div></div><div class="footer-grid"><div>امضاء مشتری</div><div>مهر و امضاء صرافی</div></div></div></body></html>`);
     win.document.close(); win.print();
 }
 
@@ -3329,7 +3446,28 @@ async function changeMyPass() { const p = document.getElementById('myNewPass').v
 async function addUser() { const u = document.getElementById('newUName').value, p = document.getElementById('newUPass').value; if (u && p) { const s = generateSalt(); db.users.push({ u, salt: s, hash: hashPassword(p, s), perms: { hawala: document.getElementById('perm_hawala').checked, exchange: document.getElementById('perm_exchange').checked, accounts: document.getElementById('perm_accounts').checked, tt: document.getElementById('perm_tt').checked, admin: document.getElementById('perm_admin').checked } }); await saveDB(); renderUserManagement(); alert("User Added."); } }
 function renderUserManagement() { document.getElementById('userListManage').innerHTML = db.users.map(u => `<div>${u.u} <button onclick="delUser('${u.u}')" class="btn btn-red" style="padding:2px 5px; font-size:10px">Delete</button></div>`).join(''); }
 async function delUser(u) { if (u !== 'admin' && confirm('Delete?')) { db.users = db.users.filter(x => x.u !== u); await saveDB(); renderUserManagement(); alert("Deleted."); } }
-async function addCity() { const n = document.getElementById('newCityName').value, c = document.getElementById('newCityCode').value.toUpperCase(); if (n && c) { db.cities.push({ name: n, code: c }); db.cityHawalaCounters[c] = { Outgoing: 1001, Incoming: 1001 }; await saveDB(); updateUI(); alert("City Added."); } }
+async function addCity() { 
+    const n = document.getElementById('newCityName').value.trim();
+    const c = document.getElementById('newCityCode').value.trim().toUpperCase();
+    const rep = document.getElementById('newCityRep').value.trim(); 
+    const contact = document.getElementById('newCityContact').value.trim(); 
+
+    if (n && c) { 
+        db.cities.push({ name: n, code: c, rep: rep, contact: contact }); 
+        db.cityHawalaCounters[c] = { Outgoing: 1001, Incoming: 1001 }; 
+        await saveDB(); 
+        updateUI(); 
+        
+        document.getElementById('newCityName').value = '';
+        document.getElementById('newCityCode').value = '';
+        document.getElementById('newCityRep').value = '';
+        document.getElementById('newCityContact').value = '';
+
+        alert("شهر و مشخصات نماینده با موفقیت ثبت شد."); 
+    } else {
+        alert("نام شهر و کد شهر الزامی است.");
+    }
+}
 async function addCurrency() { const c = document.getElementById('newCurrCode').value.toUpperCase(); if (c && !db.currencies.includes(c)) { db.currencies.push(c); db.cashBox[c] = 0; db.initialCapital[c] = 0; await saveDB(); updateUI(); alert("Currency Added."); } }
 async function deleteCurrency() { const c = document.getElementById('currToDelete').value; if(c && confirm('Delete?')) { db.currencies = db.currencies.filter(x=>x!==c); delete db.cashBox[c]; await saveDB(); updateUI(); renderDashboard(); alert("Deleted."); } }
 function checkCityForDelete() { const c = document.getElementById('cityToDelete').value; document.getElementById('transferCitySection').style.display = db.hawalas.some(h=>h.cityBook===c) ? 'block' : 'none'; }
@@ -3520,6 +3658,13 @@ window.go = function(pageId) {
         renderEmployees();
     }
 };
+
+function switchSettingsTab(tabId, btn) {
+    document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.settings-menu-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    btn.classList.add('active');
+}
 </script>
 </body>
 </html>
