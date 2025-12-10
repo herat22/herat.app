@@ -2264,6 +2264,7 @@ function updateUI() {
 if(document.getElementById('dashboard').classList.contains('active')) renderDashboard();
     if (db.settings) {
         // پر کردن کادرهای تنظیمات با اطلاعات قبلی
+if(document.getElementById('reports').classList.contains('active')) renderJournal();
         if(document.getElementById('setCompName')) document.getElementById('setCompName').value = db.settings.companyName || '';
         if(document.getElementById('setCompSlogan')) document.getElementById('setCompSlogan').value = db.settings.slogan || '';
         if(document.getElementById('setCompPhone')) document.getElementById('setCompPhone').value = db.settings.phone || '';
