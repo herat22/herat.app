@@ -254,7 +254,161 @@ html[dir="ltr"] .submenu {
 .setting-card { background: var(--bg-card); border: 1px solid var(--gold-border); border-radius: 16px; padding: 30px; max-width: 800px; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
 .setting-header-large { font-size: 24px; font-weight: 900; color: var(--gold-primary); margin-bottom: 10px; border-bottom: 2px solid var(--gold-border); padding-bottom: 15px; }
 .city-detail-group { background: rgba(212, 175, 55, 0.05); padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px dashed var(--gold-border); }
-/* --- پایان کدهای جدید تنظیمات --- */
+/* =========================================
+   شروع تنظیمات موبایل (ریسپانسیو)
+   ========================================= */
+@media screen and (max-width: 850px) {
+    /* 1. تنظیمات کلی صفحه */
+    body {
+        overflow: auto !important; /* اسکرول فعال شود */
+        display: block !important;
+        height: auto !important;
+    }
+    
+    #mainApp {
+        flex-direction: column !important; /* چینش عمودی */
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    /* 2. تبدیل منوی راست به منوی بالا */
+    .sidebar {
+        width: 100% !important;
+        height: auto !important;
+        flex-direction: row !important; /* افقی شود */
+        overflow-x: auto !important; /* اسکرول به چپ و راست */
+        padding: 10px !important;
+        border-left: none !important;
+        border-bottom: 3px solid var(--gold-primary) !important;
+        white-space: nowrap !important;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3) !important;
+        position: relative !important;
+        z-index: 999 !important;
+        background: var(--bg-sidebar) !important;
+    }
+
+    /* تنظیم دکمه‌های منو */
+    .nav-btn {
+        width: auto !important;
+        display: inline-flex !important;
+        margin: 0 5px !important;
+        padding: 8px 12px !important;
+        font-size: 13px !important;
+        border: 1px solid var(--gold-border) !important;
+        border-radius: 20px !important;
+    }
+    
+    /* مخفی کردن عنوان بزرگ برنامه در منوی موبایل برای جا باز شدن */
+    .sidebar h2, .sidebar #sidebarUserInfo {
+        display: none !important;
+    }
+
+    /* تنظیمات محتوای اصلی */
+    .content {
+        padding: 10px !important;
+        margin: 0 !important;
+        width: 100% !important;
+        overflow: visible !important;
+    }
+
+    /* 3. اصلاح فرم‌های چند ستونه به تک ستونه */
+    .grid-2, .grid-3, .grid-4 {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+
+    /* 4. اصلاح صفحه تنظیمات (Settings) */
+    .settings-container {
+        flex-direction: column !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    .settings-sidebar {
+        width: 100% !important;
+        height: auto !important;
+        min-height: auto !important;
+        max-height: none !important;
+        border-left: none !important;
+        border-bottom: 2px solid var(--gold-primary) !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        padding: 5px !important;
+        overflow: visible !important;
+    }
+
+    .settings-menu-btn {
+        width: 48% !important; /* دو دکمه در هر ردیف */
+        margin: 1% !important;
+        text-align: center !important;
+        justify-content: center !important;
+        padding: 10px !important;
+        font-size: 12px !important;
+    }
+
+    .settings-content-area {
+        padding: 10px !important;
+        overflow: visible !important;
+    }
+
+    .setting-card {
+        padding: 15px !important;
+        width: 100% !important;
+        box-shadow: none !important;
+        border: none !important;
+    }
+
+    /* 5. اصلاح کادرهای سود و زیان و آمار */
+    .profit-section {
+        flex-direction: column !important;
+        padding: 10px !important;
+    }
+    
+    .profit-details {
+        width: 100% !important;
+        border-right: none !important;
+        border-bottom: 1px dashed rgba(255,255,255,0.3) !important;
+        padding-bottom: 10px !important;
+        margin-bottom: 10px !important;
+    }
+
+    /* 6. اصلاح پنجره‌های مودال (پاپ‌آپ) */
+    .modal {
+        align-items: flex-start !important; /* از بالا شروع شود */
+        padding-top: 20px !important;
+        overflow-y: auto !important;
+    }
+
+    .modal-content {
+        width: 95% !important;
+        max-width: 95% !important;
+        margin: 0 auto 20px auto !important;
+        padding: 15px !important;
+        border-radius: 15px !important;
+        max-height: none !important; /* ارتفاع محدود نباشد */
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    /* اصلاح فرم ورود */
+    .login-box {
+        width: 90% !important;
+        padding: 20px 15px !important;
+        margin-top: 10% !important;
+    }
+    
+    /* کوچک کردن فونت‌های بزرگ */
+    h2, .card-header, .setting-header-large {
+        font-size: 18px !important;
+    }
+    .stat-val {
+        font-size: 22px !important;
+    }
+}
+/* =========================================
+   پایان تنظیمات موبایل
+   ========================================= */
 </style>
 </head>
 <body>
