@@ -2261,7 +2261,7 @@ function updateUI() {
     }
     if(document.getElementById('hawala').classList.contains('active')) filterHawala(); 
     if(document.getElementById('accounts').classList.contains('active')) loadCustomerLedger();
-// --- شروع کد جدید: نمایش نام شرکت ---
+if(document.getElementById('dashboard').classList.contains('active')) renderDashboard();
     if (db.settings) {
         // پر کردن کادرهای تنظیمات با اطلاعات قبلی
         if(document.getElementById('setCompName')) document.getElementById('setCompName').value = db.settings.companyName || '';
