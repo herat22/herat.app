@@ -254,7 +254,40 @@ html[dir="ltr"] .submenu {
 .setting-card { background: var(--bg-card); border: 1px solid var(--gold-border); border-radius: 16px; padding: 30px; max-width: 800px; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
 .setting-header-large { font-size: 24px; font-weight: 900; color: var(--gold-primary); margin-bottom: 10px; border-bottom: 2px solid var(--gold-border); padding-bottom: 15px; }
 .city-detail-group { background: rgba(212, 175, 55, 0.05); padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px dashed var(--gold-border); }
-/* --- پایان کدهای جدید تنظیمات --- */
+@media print {
+    .thermal-receipt {
+        width: 80mm !important;
+        font-size: 10pt !important;
+        padding: 5px !important;
+        margin: 0 auto !important;
+        border: none !important;
+        font-family: 'Tahoma', sans-serif !important;
+    }
+    .a4-receipt {
+        width: 210mm !important;
+        height: 290mm !important;
+        padding: 20mm !important;
+        border: none !important;
+        position: relative;
+    }
+    .id-copy-area {
+        margin-top: 50px;
+        height: 300px;
+        border: 2px dashed #000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #999;
+        font-weight: bold;
+        background: #fdfdfd;
+    }
+    .print-logo-img {
+        max-width: 150px;
+        max-height: 80px;
+        display: block;
+        margin: 0 auto 10px auto;
+    }
+}
 </style>
 </head>
 <body>
@@ -874,63 +907,95 @@ html[dir="ltr"] .submenu {
     </div> 
 </div>
 <div id="modalNewHawala" class="modal">
-    <div class="modal-content">
+    <div class="modal-content" style="max-width:900px;">
         <span class="close-icon" onclick="closeModal('modalNewHawala')">&times;</span>
-        <div class="card-header" data-i18n="modal_new_hawala">ثبت حواله جدید</div>
+        <div class="card-header" data-i18n="modal_new_hawala">ثبت حواله جدید (جامع)</div>
         
-        <div class="radio-group" style="margin-bottom: 10px;">
-            <div id="hOptExternal" class="radio-label active" onclick="setHawalaCustType('external')" tabindex="0">
-                <span data-i18n="opt_external_cust">مشتری آزاد (نقدی)</span>
+        <div class="grid-3">
+             <div class="radio-group" style="margin-bottom: 0;">
+                <div id="hOptExternal" class="radio-label active" onclick="setHawalaCustType('external')">نقدی (آزاد)</div>
+                <div id="hOptInternal" class="radio-label" onclick="setHawalaCustType('internal')">حساب‌دار</div>
             </div>
-            <div id="hOptInternal" class="radio-label" onclick="setHawalaCustType('internal')" tabindex="0">
-                <span data-i18n="opt_internal_cust">مشتری حساب‌دار</span>
-            </div>
-        </div>
-        <div id="hInternalSec" style="display:none; background:rgba(212,175,55,0.1); padding:10px; border-radius:8px; margin-bottom:15px; border:1px solid var(--gold-primary);">
-            <label class="label" data-i18n="lbl_select_account">انتخاب مشتری (جهت ثبت در حساب)</label>
-            <select id="hCustomerSelect" class="input" onchange="fillHawalaCustName()"></select>
-        </div>
-        <div class="grid-2">
             <div>
-                <label class="label" data-i18n="lbl_operation_type">نوع عملیات</label>
+                <label class="label">نوع عملیات</label>
                 <select id="hType" class="input">
-                    <option value="Outgoing" data-i18n="opt_outgoing_full">ارسال (به شهر دیگر)</option>
-                    <option value="Incoming" data-i18n="opt_incoming_full">دریافت (از شهر دیگر)</option>
+                    <option value="Outgoing">ارسال (Sender)</option>
+                    <option value="Incoming">دریافت (Receiver)</option>
                 </select>
             </div>
             <div>
-                <label class="label" data-i18n="lbl_city_book">کتاب شهر (طرف حساب)</label>
+                <label class="label">کتاب شهر</label>
                 <select id="hCityBook" class="input"></select>
             </div>
         </div>
-        <div class="grid-4">
-            <div><label class="label" data-i18n="lbl_amount">مبلغ اصل حواله</label><input type="number" id="hAmt" class="input"></div>
-            <div><label class="label" data-i18n="lbl_currency">ارز</label><select id="hCurr" class="input"></select></div>
-            <div>
-                <label class="label" style="color:#42a5f5">نوع کمیشن</label>
-                <select id="hCommType" class="input">
-                    <option value="in">دریافتی (سود +)</option>
-                    <option value="out">پرداختی (هزینه -)</option>
-                </select>
+
+        <div id="hInternalSec" style="display:none; background:rgba(212,175,55,0.1); padding:10px; border-radius:8px; margin-bottom:15px;">
+            <label class="label">انتخاب مشتری حساب‌دار</label>
+            <select id="hCustomerSelect" class="input" onchange="fillHawalaCustName()"></select>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.03); padding:10px; border:1px dashed var(--gold-border); border-radius:10px; margin:10px 0;">
+            <div class="grid-4">
+                <div><label class="label">مبلغ اصل حواله</label><input type="number" id="hAmt" class="input"></div>
+                <div><label class="label">ارز حواله</label><select id="hCurr" class="input"></select></div>
+                <div>
+                    <label class="label">مبلغ کمیشن</label>
+                    <div style="display:flex; gap:2px;">
+                        <input type="number" id="hComm" class="input" value="0">
+                        <select id="hCommType" class="input" style="width:70px; padding:0 5px;">
+                             <option value="in">سود (+)</option>
+                             <option value="out">هزینه (-)</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="label">ارز کمیشن</label>
+                    <select id="hCommCurr" class="input"></select>
+                </div>
             </div>
-            <div><label class="label" data-i18n="lbl_commission">مقدار کمیشن</label><input type="number" id="hComm" class="input" value="0" placeholder="0"></div>
         </div>
-        <hr style="margin:10px 0; border:0; border-top:1px dashed var(--gold-primary)">
-        <div class="grid-2">
-            <div><label class="label" data-i18n="lbl_sender">نام فرستنده</label><input id="hSender" class="input"></div>
-            <div><label class="label" data-i18n="lbl_receiver">نام گیرنده</label><input id="hReceiver" class="input"></div>
+
+        <hr style="border:0; border-top:1px solid var(--gold-border); margin:15px 0;">
+
+        <div class="grid-2" style="gap:20px;">
+            <div style="background:rgba(0,0,0,0.2); padding:10px; border-radius:10px;">
+                <h4 style="color:var(--gold-primary); margin-bottom:10px; border-bottom:1px solid var(--gold-faint);">اطلاعات فرستنده (Sender)</h4>
+                <div class="grid-2">
+                    <div><label class="label">نام</label><input id="hSender" class="input"></div>
+                    <div><label class="label">تخلص</label><input id="hSenderLast" class="input"></div>
+                </div>
+                <div class="grid-2">
+                    <div><label class="label">نام پدر</label><input id="hSenderFather" class="input"></div>
+                    <div><label class="label">موبایل</label><input id="hPhone" class="input"></div>
+                </div>
+                <div class="grid-2">
+                    <div><label class="label">شماره تذکره/ID</label><input id="hSenderID" class="input"></div>
+                    <div><label class="label">منبع عاید</label><input id="hSenderSource" class="input"></div>
+                </div>
+                <div><label class="label">هدف ارسال / جزئیات</label><input id="hSenderPurpose" class="input"></div>
+            </div>
+
+            <div style="background:rgba(0,0,0,0.2); padding:10px; border-radius:10px;">
+                <h4 style="color:#42a5f5; margin-bottom:10px; border-bottom:1px solid rgba(66, 165, 245, 0.3);">اطلاعات گیرنده (Receiver)</h4>
+                <div class="grid-2">
+                    <div><label class="label">نام</label><input id="hReceiver" class="input"></div>
+                    <div><label class="label">تخلص</label><input id="hReceiverLast" class="input"></div>
+                </div>
+                <div class="grid-2">
+                    <div><label class="label">نام پدر</label><input id="hReceiverFather" class="input"></div>
+                    <div><label class="label">موبایل</label><input id="hReceiverPhone" class="input"></div>
+                </div>
+                <div class="grid-2">
+                    <div><label class="label">شماره تذکره/ID</label><input id="hReceiverID" class="input"></div>
+                    <div><label class="label">منبع عاید/شغل</label><input id="hReceiverSource" class="input"></div>
+                </div>
+                <div><label class="label">هدف دریافت / جزئیات</label><input id="hReceiverPurpose" class="input"></div>
+            </div>
         </div>
-        <div class="grid-2">
-            <div><label class="label" data-i18n="lbl_phone">تلفن تماس</label><input id="hPhone" class="input"></div>
-            <div><label class="label" data-i18n="lbl_id_card">شماره تذکره/پاسپورت</label><input id="hIDCard" class="input"></div>
-        </div>
+
         <div style="margin-top:15px; text-align:left">
-            <button class="btn btn-outline" onclick="closeModal('modalNewHawala')">
-                <span data-i18n="btn_cancel">انصراف (Esc)</span>
-            </button>
-            <button class="btn btn-gold" onclick="submitHawala()">
-                <span data-i18n="btn_issue_hawala">صدور و ثبت (F10)</span>
-            </button>
+            <button class="btn btn-outline" onclick="closeModal('modalNewHawala')">انصراف (Esc)</button>
+            <button class="btn btn-gold" onclick="submitHawala()">صدور و ثبت (F10)</button>
         </div>
     </div>
 </div>
@@ -1154,6 +1219,12 @@ html[dir="ltr"] .submenu {
                             <input id="setCompFooter" class="input" placeholder="از انتخاب شما متشکریم">
                         </div>
                         <button class="btn btn-gold" style="width:100%; padding:15px; margin-top:15px" onclick="saveCompanyProfile()">
+<div style="margin-top:15px; border-top:1px dashed var(--gold-border); padding-top:15px;">
+    <label class="label">لوگوی صرافی (جهت چاپ در رسید)</label>
+    <input type="file" id="logoUploader" accept="image/*" class="input" onchange="saveLogo()">
+    <img id="logoPreview" style="max-height:60px; display:none; margin-top:5px; border:1px solid #ccc;">
+    <button class="btn btn-red btn-sm" onclick="clearLogo()" style="margin-top:5px">حذف لوگو</button>
+</div>
                             ثبت و ذخیره مشخصات (Save)
                         </button>
                     </div>
@@ -2152,23 +2223,16 @@ function toggleGroup(id) {
 }
 // --- پایان کد جدید ---
 function getPrintHeaderHTML() {
-    // اگر تنظیمات نداریم، خالی برگردان
-    if (!db.settings) return '';
-    // اگر تیک نمایش سربرگ خاموش است، خالی برگردان
-    if (db.settings.printHeader === false) return '';
-
+    if (!db.settings || db.settings.printHeader === false) return '';
     const title = db.settings.companyName || "صرافی هراتی‌ها";
     const sub = db.settings.slogan || "";
-    const phone = db.settings.phone || "";
-    const addr = db.settings.address || "";
+    const logoImg = db.settings.logo ? `<img src="${db.settings.logo}" class="print-logo-img">` : '';
     
-    return `<div style="text-align:center; margin-bottom:15px; border-bottom:2px solid #000; padding-bottom:10px;">
-                <h2 style="margin:0; padding:0; font-family:'Vazirmatn'; font-weight:900;">${title}</h2>
-                <div style="font-size:14px; margin-top:5px;">${sub}</div>
-                <div style="font-size:12px; margin-top:5px; display:flex; justify-content:space-between; direction:rtl;">
-                    <span>📞 ${phone}</span>
-                    <span>📍 ${addr}</span>
-                </div>
+    return `<div style="text-align:center; margin-bottom:10px; border-bottom:2px solid #000; padding-bottom:10px;">
+                ${logoImg}
+                <h2 style="margin:0; font-family:'Vazirmatn'; font-weight:900;">${title}</h2>
+                <div style="font-size:12px;">${sub}</div>
+                <div style="font-size:11px; margin-top:5px;">${db.settings.phone || ''} | ${db.settings.address || ''}</div>
             </div>`;
 }
 
@@ -2325,7 +2389,8 @@ function applyPermissions() {
 function updateUI() {
     const t = TRANSLATIONS[currentLang];
     const currOptions = db.currencies.map(c => `<option value="${c}">${c}</option>`).join('');
-    document.querySelectorAll('#hCurr, #editHCurr, #txCurr, #exSellCurr, #exBuyCurr, #cryptoCurr, #ttCurr, #ctCurr, #fxBaseCurr, #fxQuoteCurr').forEach(select => { 
+    // اضافه شدن hCommCurr به لیست زیر
+    document.querySelectorAll('#hCurr, #editHCurr, #txCurr, #exSellCurr, #exBuyCurr, #cryptoCurr, #ttCurr, #ctCurr, #fxBaseCurr, #fxQuoteCurr, #hCommCurr').forEach(select => { 
         select.innerHTML = currOptions; 
     });
     const cityOptions = db.cities.map(c => `<option value="${c.code}">${escapeHtml(c.name)}</option>`).join('');
@@ -2340,41 +2405,26 @@ function updateUI() {
     document.getElementById('ctReceiver').innerHTML = custOptions;
     const currToDelete = document.getElementById('currToDelete'); 
     if (currToDelete) currToDelete.innerHTML = db.currencies.map(c => `<option value="${c}">${c}</option>`).join('');
-    const initCapDiv = document.getElementById('initialCapitalInputs');
-     if (initCapDiv) { 
-        initCapDiv.innerHTML = db.currencies.map(c => {
-            const currentRate = (db.avgRates && db.avgRates[c]) ? db.avgRates[c] : 0;
-            return `
-            <div style="display:flex; gap:5px; align-items:center; margin-bottom:5px; border-bottom:1px dashed #444; padding-bottom:5px;">
-                <div style="flex:1">
-                    <span style="font-size:11px; color:var(--gold-primary)">موجودی ${c}:</span>
-                    <input type="number" id="initCap_${c}" class="input" placeholder="Amount" value="${db.initialCapital[c] || 0}" style="margin-bottom:2px">
-                </div>
-                <div style="flex:1">
-                    <span style="font-size:11px; color:#4caf50">نرخ خرید (${c}):</span>
-                    <input type="number" id="initRate_${c}" class="input" placeholder="Rate" value="${currentRate}" style="margin-bottom:2px">
-                </div>
-            </div>`;
-        }).join(''); 
+    
+    // نمایش پیش‌نمایش لوگو
+    if(db.settings && db.settings.logo) {
+        const img = document.getElementById('logoPreview');
+        if(img) { img.src = db.settings.logo; img.style.display = 'block'; }
     }
+
     if(document.getElementById('hawala').classList.contains('active')) filterHawala(); 
     if(document.getElementById('accounts').classList.contains('active')) loadCustomerLedger();
-if(document.getElementById('dashboard').classList.contains('active')) renderDashboard();
+    if(document.getElementById('dashboard').classList.contains('active')) renderDashboard();
     if (db.settings) {
-        // پر کردن کادرهای تنظیمات با اطلاعات قبلی
-if(document.getElementById('reports').classList.contains('active')) renderJournal();
+        if(document.getElementById('reports').classList.contains('active')) renderJournal();
         if(document.getElementById('setCompName')) document.getElementById('setCompName').value = db.settings.companyName || '';
         if(document.getElementById('setCompSlogan')) document.getElementById('setCompSlogan').value = db.settings.slogan || '';
         if(document.getElementById('setCompPhone')) document.getElementById('setCompPhone').value = db.settings.phone || '';
         if(document.getElementById('setCompAddress')) document.getElementById('setCompAddress').value = db.settings.address || '';
         if(document.getElementById('setCompFooter')) document.getElementById('setCompFooter').value = db.settings.footerMsg || '';
-        
-        // تغییر نام‌ها در منو و صفحه ورود
         applyCompanySettings();
     }
-    // --- پایان کد جدید ---
 }
-
 async function togglePrintHeaderSetting() { if (!db.settings) db.settings = {}; db.settings.printHeader = document.getElementById('printHeaderOpt').checked; await saveDB(); }
 // --- شروع کد آنالیز سرمایه ---
 // 1. این تابع کل جدول آنالیز را می سازد (تغییر کرده)
@@ -2763,21 +2813,35 @@ async function submitHawala() {
     const hCityBook = document.getElementById('hCityBook').value; 
     const hAmt = parseFloat(document.getElementById('hAmt').value); 
     const hCurr = document.getElementById('hCurr').value; 
-    const hSender = document.getElementById('hSender').value.trim(); 
-    const hReceiver = document.getElementById('hReceiver').value.trim();
     
-    // دریافت مقدار و نوع کمیشن
+    // فرستنده
+    const hSender = document.getElementById('hSender').value.trim(); 
+    const hSenderLast = document.getElementById('hSenderLast').value.trim(); 
+    const hSenderFather = document.getElementById('hSenderFather').value.trim(); 
+    const hSenderPhone = document.getElementById('hPhone').value.trim(); 
+    const hSenderID = document.getElementById('hSenderID').value.trim(); 
+    const hSenderSource = document.getElementById('hSenderSource').value.trim(); 
+    const hSenderPurpose = document.getElementById('hSenderPurpose').value.trim(); 
+
+    // گیرنده
+    const hReceiver = document.getElementById('hReceiver').value.trim();
+    const hReceiverLast = document.getElementById('hReceiverLast').value.trim();
+    const hReceiverFather = document.getElementById('hReceiverFather').value.trim();
+    const hReceiverPhone = document.getElementById('hReceiverPhone').value.trim();
+    const hReceiverID = document.getElementById('hReceiverID').value.trim();
+    const hReceiverSource = document.getElementById('hReceiverSource').value.trim();
+    const hReceiverPurpose = document.getElementById('hReceiverPurpose').value.trim();
+
     let rawComm = parseFloat(document.getElementById('hComm').value) || 0; 
     const commType = document.getElementById('hCommType').value;
-    
-    // اگر نوع کمیشن "پرداختی" باشد، منفی میشود (هزینه)، اگر "دریافتی" باشد، مثبت میماند (سود)
+    const commCurr = document.getElementById('hCommCurr').value; 
     const hComm = (commType === 'out') ? -rawComm : rawComm; 
 
-    if (!hCityBook || hAmt <= 0 || !hSender || !hReceiver) { alert("اطلاعات ناقص است / Data Incomplete"); return; }
+    if (!hCityBook || hAmt <= 0 || !hSender || !hReceiver) { alert("اطلاعات ناقص است"); return; }
     
     const isInternal = (hawalaCustType === 'internal');
     const custName = document.getElementById('hCustomerSelect').value;
-    if (isInternal && !custName) { alert("لطفا مشتری را انتخاب کنید / Select Customer"); return; }
+    if (isInternal && !custName) { alert("مشتری را انتخاب کنید"); return; }
 
     const bookNum = getNewHawalaNumber(hCityBook, hType);
     const uniqueId = `${hCityBook}-${hType === 'Outgoing' ? 'O' : 'I'}-${bookNum}`;
@@ -2785,9 +2849,12 @@ async function submitHawala() {
 
     const newHawala = { 
         id: uniqueId, displayId: displayNum, bookNum: bookNum, type: hType, 
-        cityBook: hCityBook, amt: hAmt, curr: hCurr, comm: hComm,
-        sender: hSender, receiver: hReceiver, 
-        phone: document.getElementById('hPhone').value, idCard: document.getElementById('hIDCard').value, 
+        cityBook: hCityBook, amt: hAmt, curr: hCurr, 
+        comm: hComm, commCurr: commCurr,
+        sender: hSender, senderLast: hSenderLast, senderFather: hSenderFather, 
+        senderPhone: hSenderPhone, senderID: hSenderID, senderSource: hSenderSource, senderPurpose: hSenderPurpose,
+        receiver: hReceiver, receiverLast: hReceiverLast, receiverFather: hReceiverFather,
+        receiverPhone: hReceiverPhone, receiverID: hReceiverID, receiverSource: hReceiverSource, receiverPurpose: hReceiverPurpose,
         regDate: Date.now(), 
         execDate: hType === 'Outgoing' ? Date.now() : 0, 
         status: hType === 'Outgoing' ? 'Done' : 'Pending',
@@ -2800,28 +2867,20 @@ async function submitHawala() {
     if (hType === 'Outgoing') { 
         if (isInternal) {
             const accId = Date.now();
-            // محاسبه خودکار با توجه به مثبت یا منفی بودن کمیشن
-            db.accounts[custName].push({ id: accId, date: Date.now(), desc: `Hawala Out ${displayNum} to ${hReceiver}`, curr: hCurr, debit: (hAmt + hComm), credit: 0, type: 'debit' });
-            logData.cust = custName; logData.accId = accId;
-            logTx('حواله', `Out (Int) ${displayNum}`, `Debit Account: ${hAmt+hComm} ${hCurr}`, 'HAWALA_SUBMIT', logData);
+            db.accounts[custName].push({ id: accId, date: Date.now(), desc: `Hawala Out ${displayNum} (Comm: ${hComm} ${commCurr})`, curr: hCurr, debit: hAmt, credit: 0, type: 'debit' });
         } else {
-            // تاثیر مستقیم روی صندوق (کم شدن یا زیاد شدن بر اساس نوع کمیشن)
-            db.cashBox[hCurr] += (hAmt + hComm); 
-            logTx('حواله', `Out (Cash) ${displayNum}`, `Cash In: ${hAmt+hComm} ${hCurr}`, 'HAWALA_SUBMIT', logData); 
+            db.cashBox[hCurr] = (db.cashBox[hCurr] || 0) + hAmt; 
+            db.cashBox[commCurr] = (db.cashBox[commCurr] || 0) + hComm;
+            logTx('حواله', `Out (Cash) ${displayNum}`, `In: ${hAmt}${hCurr}`, 'HAWALA_SUBMIT', logData); 
         }
     } else { 
-        logTx('حواله', `In ${displayNum}`, `Incoming: ${hAmt}`, 'HAWALA_SUBMIT', logData); 
+        logTx('حواله', `In ${displayNum}`, `Pending ${hAmt}`, 'HAWALA_SUBMIT', logData); 
     }
 
     db.hawalas.push(newHawala); 
     await saveDB(); 
     closeModal('modalNewHawala'); filterHawala(); renderDashboard(); 
-    
-    // پاک کردن فرم برای استفاده بعدی
-    document.getElementById('hComm').value = "0";
-    document.getElementById('hCommType').value = "in";
-    
-    alert(`حواله ${displayNum} با موفقیت ثبت شد.`);
+    alert(`حواله ${displayNum} ثبت شد.`);
 }
 
 async function execHawala(id) {
@@ -3254,27 +3313,78 @@ function printLedger() {
 }
 
 function printHawalaList() {
-    const filterCity = document.getElementById('filterHCity').value; const filterType = document.getElementById('filterHType').value; const filterStatus = document.getElementById('filterHStatus').value;
-    let cityNameHeader = "همه شهرها"; if (filterCity !== "All") { const foundCity = db.cities.find(c => c.code === filterCity); cityNameHeader = foundCity ? foundCity.name : filterCity; }
-    const filteredHawalas = db.hawalas.filter(h => (filterCity === 'All' || h.cityBook === filterCity) && (filterType === 'All' || h.type === filterType) && (filterStatus === 'All' || h.status === filterStatus)).sort((a, b) => b.regDate - a.regDate);
-    let totals = {}; filteredHawalas.forEach(h => { if (!totals[h.curr]) totals[h.curr] = { in: 0, out: 0, comm: 0 }; if (h.type === 'Incoming') totals[h.curr].in += h.amt; else totals[h.curr].out += h.amt; totals[h.curr].comm += (h.comm || 0); });
-    let balanceHtml = '<div style="margin-bottom:20px; border:2px solid #000; padding:10px; background:#f0f0f0;"><h4 style="margin:0 0 10px 0; border-bottom:1px solid #999; padding-bottom:5px">خلاصه وضعیت</h4>';
-    for (let curr in totals) { balanceHtml += `<div style="display:flex; justify-content:space-between; margin-bottom:5px; border-bottom:1px dotted #ccc; padding-bottom:5px;"><span style="font-weight:bold">${curr}</span><span>دریافتی: <b dir="ltr">${totals[curr].in.toLocaleString()}</b></span><span>پرداختی: <b dir="ltr">${totals[curr].out.toLocaleString()}</b></span><span>تفاضل: <b dir="ltr" style="direction:ltr">${(totals[curr].in - totals[curr].out).toLocaleString()}</b></span><span style="background:#eee; padding:0 5px; border-radius:4px;">کمیشن: <b dir="ltr">${totals[curr].comm.toLocaleString()}</b></span></div>`; }
-    balanceHtml += '</div>';
-    let printableBody = filteredHawalas.map(h => `<tr><td style="font-weight:bold; direction:ltr; text-align:center">${h.displayId || h.id}</td><td style="text-align:center">${new Date(h.regDate).toLocaleDateString('fa-IR')}</td><td>${escapeHtml(h.sender)}</td><td>${escapeHtml(h.receiver)}</td><td dir="ltr" style="text-align:center">${escapeHtml(h.phone || '-')}</td><td dir="ltr" style="font-weight:bold; text-align:center">${h.amt.toLocaleString()} ${h.curr}</td><td dir="ltr" style="text-align:center">${h.comm ? h.comm.toLocaleString() : '-'}</td><td style="text-align:center">${h.execDate ? new Date(h.execDate).toLocaleDateString('fa-IR') : '-'}</td></tr>`).join('');
-    const win = window.open('', '_blank', 'width=1100,height=800'); 
-    win.document.write(`<html><head><title>Hawala Book</title><style>table{width:100%;border-collapse:collapse;font-family:'Vazirmatn';font-size:10pt;direction:rtl}th,td{border:1px solid #000;padding:5px;text-align:right} th{background:#eee; text-align:center;} @page{size:A4 landscape}</style></head><body>${getPrintHeaderHTML()}<h3>گزارش کتاب حواله - ${cityNameHeader}</h3>${balanceHtml}<table><thead><tr><th>شماره حواله</th><th>تاریخ ثبت</th><th>فرستنده</th><th>گیرنده</th><th>شماره موبایل</th><th>مبلغ پول</th><th>کمیشن</th><th>تاریخ اجرا</th></tr></thead><tbody>${printableBody}</tbody></table></body></html>`);
+    const filterCity = document.getElementById('filterHCity').value; 
+    const filterType = document.getElementById('filterHType').value; 
+    const filterStatus = document.getElementById('filterHStatus').value;
+    
+    if (filterType === 'All') { alert("لطفاً برای چاپ کتاب، نوع (ارسالی یا دریافتی) را مشخص کنید."); return; }
+
+    const filtered = db.hawalas.filter(h => (filterCity === 'All' || h.cityBook === filterCity) && (h.type === filterType) && (filterStatus === 'All' || h.status === filterStatus)).sort((a, b) => a.regDate - b.regDate);
+
+    const title = filterType === 'Outgoing' ? 'کتاب حوالجات ارسالی' : 'کتاب حوالجات دریافتی';
+    const win = window.open('', '_blank', 'width=1200,height=800');
+    
+    let totalHtml = ''; const totals = {}; filtered.forEach(h => { totals[h.curr] = (totals[h.curr] || 0) + h.amt; }); for(let c in totals) totalHtml += `<span style="margin:0 10px; border:1px solid #000; padding:2px 5px;">مجموع ${c}: <b>${totals[c].toLocaleString()}</b></span>`;
+
+    let tableHead = '', tableRows = '';
+    if (filterType === 'Outgoing') {
+        tableHead = `<tr><th>#</th><th>کد</th><th>تاریخ</th><th>فرستنده</th><th>تخلص</th><th>پدر</th><th>موبایل</th><th>تذکره</th><th style="background:#eee">گیرنده</th><th style="background:#eee">پدر</th><th style="background:#eee">موبایل</th><th>مبلغ</th><th>ارز</th><th>کمیشن</th><th>منبع</th><th>هدف</th></tr>`;
+        tableRows = filtered.map((h, i) => `<tr><td>${i+1}</td><td style="font-weight:bold">${h.displayId}</td><td>${new Date(h.regDate).toLocaleDateString('fa-IR')}</td><td>${h.sender}</td><td>${h.senderLast||''}</td><td>${h.senderFather||''}</td><td>${h.senderPhone||''}</td><td>${h.senderID||''}</td><td style="background:#fafafa">${h.receiver}</td><td style="background:#fafafa">${h.receiverFather||''}</td><td style="background:#fafafa">${h.receiverPhone||''}</td><td dir="ltr" style="font-weight:bold">${h.amt.toLocaleString()}</td><td>${h.curr}</td><td>${h.comm}</td><td>${h.senderSource||''}</td><td>${h.senderPurpose||''}</td></tr>`).join('');
+    } else {
+        tableHead = `<tr><th>#</th><th>کد</th><th>تاریخ ثبت</th><th>تاریخ اجرا</th><th>دریافت کننده</th><th>تخلص</th><th>پدر</th><th>موبایل</th><th>تذکره</th><th>مبلغ</th><th>ارز</th><th>منبع</th><th>هدف</th><th>جزئیات</th></tr>`;
+        tableRows = filtered.map((h, i) => `<tr><td>${i+1}</td><td style="font-weight:bold">${h.displayId}</td><td>${new Date(h.regDate).toLocaleDateString('fa-IR')}</td><td>${h.execDate ? new Date(h.execDate).toLocaleDateString('fa-IR') : '-'}</td><td>${h.receiver}</td><td>${h.receiverLast||''}</td><td>${h.receiverFather||''}</td><td>${h.receiverPhone||''}</td><td>${h.receiverID||''}</td><td dir="ltr" style="font-weight:bold">${h.amt.toLocaleString()}</td><td>${h.curr}</td><td>${h.receiverSource||''}</td><td>${h.receiverPurpose||''}</td><td>${h.receiverPurpose||''}</td></tr>`).join('');
+    }
+
+    win.document.write(`<html><head><title>${title}</title><style>@page { size: A4 landscape; margin: 5mm; } body { font-family: 'Vazirmatn', Tahoma; direction: rtl; font-size: 9pt; } table { width: 100%; border-collapse: collapse; margin-top: 10px; } th, td { border: 1px solid #444; padding: 4px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; } th { background: #ddd; font-weight: bold; font-size: 8pt; } tr:nth-child(even) { background: #f9f9f9; } .header-box { text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; }</style></head><body><div class="header-box">${getPrintHeaderHTML()}<h3>${title}</h3><div style="margin-top:5px;">${totalHtml}</div></div><table><thead>${tableHead}</thead><tbody>${tableRows}</tbody></table></body></html>`);
     win.document.close(); win.print();
 }
 
 function printH(id) {
-    const h = db.hawalas.find(x => x.id === id); if (!h) { alert('حواله یافت نشد.'); return; }
-    const typeText = h.type === 'Outgoing' ? 'حواله صادره (Out)' : 'حواله وارده (In)';
-    const cityName = db.cities.find(c => c.code === h.cityBook)?.name || h.cityBook;
+    const h = db.hawalas.find(x => x.id === id); 
+    if (!h) { alert('حواله یافت نشد.'); return; }
+    
     const amtInWords = numberToPersianWords(h.amt) + " " + h.curr;
-    const win = window.open('', '_blank', 'width=800,height=600');
-    win.document.write(`<html><head><title>${typeText} - ${h.displayId || h.id}</title><style>@page { size: A5 landscape; margin: 10mm; } body { font-family: 'Vazirmatn', tahoma; direction: rtl; padding: 0; margin: 0; font-size: 11pt; color: #000; } .receipt { width: 100%; max-width: 95%; margin: 0 auto; padding: 15px; border: 3px double #000; border-radius: 0; background: #ffffff; position: relative; } .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; } .info-item { font-size: 11pt; border-bottom: 1px dotted #999; padding-bottom: 5px; margin-bottom: 5px; display: flex; justify-content: space-between; } .info-item b { font-weight: bold; } .amount-box { border: 2px solid #000; padding: 10px; text-align: center; margin-top: 15px; background: #f9f9f9; } .amount-words { font-weight: bold; font-size: 12pt; margin-top: 5px; } .footer-grid { display: grid; grid-template-columns: 1fr 1fr; margin-top: 40px; text-align: center; font-size: 10pt; }</style></head><body>${getPrintHeaderHTML()}<div class="receipt"><div style="text-align:center; font-weight:bold; margin-bottom:20px; font-size: 14pt; border-bottom: 1px solid #000; padding-bottom: 10px;">رسید ${typeText} (کد: ${h.displayId || h.id})</div><div class="info-grid"><div class="info-item"><b>تاریخ:</b> <span>${new Date(h.regDate).toLocaleDateString('fa-IR')}</span></div><div class="info-item"><b>شهر طرف حساب:</b> <span>${escapeHtml(cityName)}</span></div><div class="info-item"><b>وضعیت:</b> <span>${h.status}</span></div></div><div class="info-grid"><div class="info-item"><b>فرستنده:</b> <span>${escapeHtml(h.sender)}</span></div><div class="info-item"><b>گیرنده:</b> <span>${escapeHtml(h.receiver)}</span></div></div><div class="info-grid"><div class="info-item"><b>تلفن:</b> <span>${escapeHtml(h.phone || '-')}</span></div><div class="info-item"><b>شماره تذکره/پاسپورت:</b> <span>${escapeHtml(h.idCard || '-')}</span></div></div><div class="amount-box"><div>مبلغ حواله:</div><b dir="ltr" style="font-size: 16pt;">${h.amt.toLocaleString()} ${h.curr}</b><div class="amount-words">مبلغ به حروف: ${amtInWords}</div></div><div class="footer-grid"><div>امضاء مشتری</div><div>مهر و امضاء صرافی</div></div></div></body></html>`);
-    win.document.close(); win.print();
+    const win = window.open('', '_blank', 'width=900,height=800');
+    
+    let content = '';
+
+    if (h.type === 'Outgoing') {
+        // رسید سوپرمارکتی برای فرستنده
+        content = `
+        <html><head><title>${h.displayId}</title>
+        <style>@page { size: 80mm auto; margin: 0; } body { font-family: 'Vazirmatn', Tahoma; direction: rtl; padding: 5px; font-size: 10pt; width: 78mm; } .line { display: flex; justify-content: space-between; border-bottom: 1px dashed #000; padding: 3px 0; } .center { text-align: center; } .big { font-size: 14pt; font-weight: bold; }</style>
+        </head><body>
+            ${getPrintHeaderHTML()}
+            <div class="center">رسید ارسال حواله</div>
+            <div class="center big">${h.displayId}</div><br>
+            <div class="line"><span>تاریخ:</span><span>${new Date(h.regDate).toLocaleDateString('fa-IR')}</span></div>
+            <div class="line"><span>فرستنده:</span><span>${h.sender} ${h.senderLast||''}</span></div>
+            <div class="line"><span>گیرنده:</span><span>${h.receiver} ${h.receiverLast||''}</span></div>
+            <div class="line"><span>مقصد:</span><span>${db.cities.find(c=>c.code===h.cityBook)?.name || h.cityBook}</span></div>
+            <div class="line"><span>مبلغ:</span><span class="big" dir="ltr">${h.amt.toLocaleString()} ${h.curr}</span></div>
+            <div class="line"><span>کمیشن:</span><span>${h.comm} ${h.commCurr || h.curr}</span></div>
+            <div style="text-align:center; margin-top:10px; font-size:9pt;">${amtInWords}</div><br>
+            <div class="center">امضاء فرستنده / متصدی</div><br><br>.
+        </body></html>`;
+    } else {
+        // رسید A4 استاندارد برای گیرنده
+        content = `
+        <html><head><title>${h.displayId}</title>
+        <style>@page { size: A4; margin: 10mm; } body { font-family: 'Vazirmatn', Tahoma; direction: rtl; padding: 20px; font-size: 12pt; border: 2px double #000; height: 95vh; } .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; } .row { border-bottom: 1px dotted #ccc; padding-bottom: 5px; display: flex; justify-content: space-between; } .lbl { font-weight: bold; } .box-val { font-family: 'Courier New'; font-weight: 900; font-size: 14pt; } .id-place { margin-top: 50px; height: 350px; border: 3px dashed #ccc; display: flex; align-items: center; justify-content: center; color: #ccc; font-size: 20pt; font-weight: bold; }</style>
+        </head><body>
+            ${getPrintHeaderHTML()}
+            <h2 style="text-align:center; background:#eee; padding:5px; border:1px solid #000;">رسید دریافت حواله</h2>
+            <div style="display:flex; justify-content:space-between; margin:20px 0;"><div style="font-size:16pt; font-weight:bold;">کد: ${h.displayId}</div><div>تاریخ: ${new Date().toLocaleDateString('fa-IR')}</div></div>
+            <div class="grid">
+                <div style="border:1px solid #000; padding:10px; border-radius:10px;"><h3>گیرنده (شما)</h3><div class="row"><span class="lbl">نام:</span><span>${h.receiver} ${h.receiverLast||''}</span></div><div class="row"><span class="lbl">پدر:</span><span>${h.receiverFather||'-'}</span></div><div class="row"><span class="lbl">تماس:</span><span>${h.receiverPhone||'-'}</span></div><div class="row"><span class="lbl">تذکره:</span><span>${h.receiverID||'-'}</span></div></div>
+                <div style="border:1px solid #000; padding:10px; border-radius:10px;"><h3>فرستنده</h3><div class="row"><span class="lbl">نام:</span><span>${h.sender} ${h.senderLast||''}</span></div><div class="row"><span class="lbl">پدر:</span><span>${h.senderFather||'-'}</span></div><div class="row"><span class="lbl">شهر:</span><span>${h.cityBook}</span></div><div class="row"><span class="lbl">هدف:</span><span>${h.senderPurpose||'-'}</span></div></div>
+            </div>
+            <div style="border:2px solid #000; padding:15px; text-align:center; background:#f9f9f9; margin-bottom:30px;"><div>مبلغ دریافتی:</div><div class="box-val" dir="ltr">${h.amt.toLocaleString()} ${h.curr}</div><div style="margin-top:5px; font-weight:bold;">${amtInWords}</div></div>
+            <div style="display:flex; justify-content:space-around; margin-bottom:20px;"><div>امضاء گیرنده<br><br>_______</div><div>مهر صرافی<br><br>_______</div></div>
+            <div class="id-place">محل کپی تذکره / پاسپورت</div>
+        </body></html>`;
+    }
+    win.document.write(content); win.document.close(); win.print();
 }
 
 function printCurrentTTForm() {
@@ -3664,6 +3774,28 @@ function switchSettingsTab(tabId, btn) {
     document.querySelectorAll('.settings-menu-btn').forEach(b => b.classList.remove('active'));
     document.getElementById(tabId).classList.add('active');
     btn.classList.add('active');
+}
+function saveLogo() {
+    const file = document.getElementById('logoUploader').files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        if(!db.settings) db.settings = {};
+        db.settings.logo = e.target.result;
+        await saveDB();
+        document.getElementById('logoPreview').src = db.settings.logo;
+        document.getElementById('logoPreview').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+}
+
+function clearLogo() {
+    if(confirm('حذف لوگو؟')) {
+        if(db.settings) db.settings.logo = null;
+        saveDB();
+        document.getElementById('logoPreview').style.display = 'none';
+        document.getElementById('logoUploader').value = '';
+    }
 }
 </script>
 </body>
