@@ -365,6 +365,9 @@ html[dir="ltr"] .submenu {
             <button class="nav-btn admin-only-btn" onclick="go('analysis')" id="nav-analysis">
                 <span data-i18n="nav_analysis">🧮 آنالیز سرمایه (F7)</span>
             </button>
+<button class="nav-btn admin-only-btn" onclick="go('commissions')" id="nav-commissions">
+                <span>💰 حساب کمیشن‌ها</span>
+            </button>
             <button class="nav-btn admin-only-btn" onclick="go('reports')" id="nav-reports">
                 <span data-i18n="nav_reports">📑 لاگ سیستم</span>
             </button>
@@ -868,43 +871,69 @@ html[dir="ltr"] .submenu {
         </button>
     </div>
 </div>
-<div id="reports" class="page admin-only-view">
-            <div class="card" style="margin-bottom:15px">
-                <div class="card-header"><span data-i18n="header_backup">پشتیبان‌گیری (Backup)</span></div>
-                <div style="display:flex; gap:15px">
-                    <button class="btn btn-blue" onclick="exportDB()">
-                        <span data-i18n="btn_download_backup">⬇️ دانلود بک‌آپ کامل</span>
-                    </button>
-                    <button class="btn btn-gold" onclick="importDB()">
-                        <span data-i18n="btn_restore_backup">⬆️ بازیابی بک‌آپ (Restore)</span>
-                    </button>
-                </div>
-            </div>
-            <div class="card">
-                <div class="card-header">
-                    <span data-i18n="header_journal">دفتر روزنامه (Log) - امکان بازگشت تراکنش</span>
-                    <button class="btn btn-outline no-print" style="font-size:12px;" onclick="printTodayJournal()">
-                        <span data-i18n="btn_print_log">🖨 پرینت رسمی گزارش</span>
-                    </button>
-                </div>
-                <div class="table-container" style="height:500px; overflow-y:auto">
-                    <table id="journalTable">
-                        <thead>
-                            <tr>
-                                <th data-i18n="th_time">زمان</th>
-                                <th data-i18n="th_section">بخش</th>
-                                <th data-i18n="th_desc">توضیحات</th>
-                                <th data-i18n="th_amount">مبلغ</th>
-                                <th data-i18n="th_user">کاربر</th>
-                                <th class="admin-only-col" data-i18n="th_ops">عملیات</th>
-                            </tr>
-                        </thead>
-                        <tbody id="journalBody"></tbody>
-                    </table>
-                </div>
-            </div>
+<div id="commissions" class="page admin-only-view">
+    <div class="card">
+        <div class="card-header">
+            <span>محاسبه و تقسیم سود (به تفکیک شهر)</span>
+            <button class="btn btn-gold" onclick="renderCommissionCalc()">🔄 محاسبه مجدد</button>
         </div>
-    </div> 
+        
+        <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">
+            * درصدها را برای هر شهر جداگانه وارد کنید تا سهم‌ها محاسبه شود.
+        </p>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>شهر / کتاب</th>
+                        <th>ارز</th>
+                        <th>کل کمیشن</th>
+                        <th style="color:var(--success)">سهم دفتر (ما)</th>
+                        <th style="color:var(--gold-primary)">سهم نماینده</th>
+                        <th style="color:var(--danger)">مالیات/هزینه</th>
+                    </tr>
+                </thead>
+                <tbody id="commCalcBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<div id="reports" class="page admin-only-view">
+    <div class="card" style="margin-bottom:15px">
+        <div class="card-header"><span data-i18n="header_backup">پشتیبان‌گیری (Backup)</span></div>
+        <div style="display:flex; gap:15px">
+            <button class="btn btn-blue" onclick="exportDB()">
+                <span data-i18n="btn_download_backup">⬇️ دانلود بک‌آپ کامل</span>
+            </button>
+            <button class="btn btn-gold" onclick="importDB()">
+                <span data-i18n="btn_restore_backup">⬆️ بازیابی بک‌آپ (Restore)</span>
+            </button>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header">
+            <span data-i18n="header_journal">دفتر روزنامه (Log) - امکان بازگشت تراکنش</span>
+            <button class="btn btn-outline no-print" style="font-size:12px;" onclick="printTodayJournal()">
+                <span data-i18n="btn_print_log">🖨 پرینت رسمی گزارش</span>
+            </button>
+        </div>
+        <div class="table-container" style="height:500px; overflow-y:auto">
+            <table id="journalTable">
+                <thead>
+                    <tr>
+                        <th data-i18n="th_time">زمان</th>
+                        <th data-i18n="th_section">بخش</th>
+                        <th data-i18n="th_desc">توضیحات</th>
+                        <th data-i18n="th_amount">مبلغ</th>
+                        <th data-i18n="th_user">کاربر</th>
+                        <th class="admin-only-col" data-i18n="th_ops">عملیات</th>
+                    </tr>
+                </thead>
+                <tbody id="journalBody"></tbody>
+            </table>
+        </div>
+    </div>
 </div>
 <div id="modalNewHawala" class="modal">
     <div class="modal-content" style="max-width:900px;">
@@ -1006,12 +1035,15 @@ html[dir="ltr"] .submenu {
             <span data-i18n="modal_edit_hawala">ویرایش حواله</span> 
             <span id="editHawalaId" style="color:var(--gold-primary)"></span>
         </div>
-        <div class="label" style="background: rgba(255, 82, 82, 0.1); color: var(--danger); padding: 5px; margin-bottom: 10px; border-radius: 4px;" data-i18n="msg_security_warning">توجه: جهت امنیت صندوق، امکان تغییر مبلغ وجود ندارد. برای اصلاح مبلغ، حواله را حذف و مجدد ایجاد کنید.</div>
+        
         <input type="hidden" id="editHId">
+
+        <div class="label" style="background: rgba(255, 82, 82, 0.1); color: var(--danger); padding: 5px; margin-bottom: 10px; border-radius: 4px;" data-i18n="msg_security_warning">توجه: تغییر مبلغ در حواله‌های اجرا شده، مستقیماً روی موجودی صندوق تاثیر می‌گذارد.</div>
+        
         <div class="grid-2">
             <div>
                 <label class="label" data-i18n="lbl_operation_type">نوع عملیات</label>
-                <select id="editHType" class="input" disabled>
+                <select id="editHType" class="input">
                     <option value="Outgoing" data-i18n="opt_outgoing_full">ارسال (به شهر دیگر)</option>
                     <option value="Incoming" data-i18n="opt_incoming_full">دریافت (از شهر دیگر)</option>
                 </select>
@@ -1023,12 +1055,12 @@ html[dir="ltr"] .submenu {
         </div>
         <div class="grid-2">
             <div>
-                <label class="label" data-i18n="lbl_amount_fixed">مبلغ (غیرقابل تغییر)</label>
-                <input type="number" id="editHAmt" class="input" disabled>
+                <label class="label" data-i18n="lbl_amount_fixed">مبلغ</label>
+                <input type="number" id="editHAmt" class="input">
             </div>
             <div>
-                <label class="label" data-i18n="lbl_currency_fixed">ارز (غیرقابل تغییر)</label>
-                <select id="editHCurr" class="input" disabled></select>
+                <label class="label" data-i18n="lbl_currency_fixed">ارز</label>
+                <select id="editHCurr" class="input"></select>
             </div>
         </div>
         <hr style="margin:10px 0; border:0; border-top:1px dashed var(--gold-border)">
@@ -1050,7 +1082,6 @@ html[dir="ltr"] .submenu {
         </div>
     </div>
 </div>
-
 <div id="modalTx" class="modal">
     <div class="modal-content">
         <span class="close-icon" onclick="closeModal('modalTx')">&times;</span>
@@ -2639,7 +2670,12 @@ function renderDashboard() {
         if (!cityBalances[h.cityBook][h.curr]) cityBalances[h.cityBook][h.curr] = 0; 
         if (h.type === 'Outgoing') cityBalances[h.cityBook][h.curr] += h.amt; 
         else if (h.type === 'Incoming') cityBalances[h.cityBook][h.curr] -= h.amt; 
-        if (h.comm && h.comm > 0) { if (!totalCommissions[h.curr]) totalCommissions[h.curr] = 0; totalCommissions[h.curr] += h.comm; }
+        if (h.comm && h.comm > 0) { 
+            // اصلاح: استفاده از ارز خود کمیشن، نه ارز حواله
+            const cC = h.commCurr || h.curr; 
+            if (!totalCommissions[cC]) totalCommissions[cC] = 0; 
+            totalCommissions[cC] += h.comm; 
+        }
     });
     db.cities.forEach(city => {
         let balanceHtml = ''; 
@@ -2905,6 +2941,9 @@ async function execHawala(id) {
 async function submitEditHawala() {
      const id = document.getElementById('editHId').value; const h = db.hawalas.find(x => x.id === id); if (!h) return;
      h.cityBook = document.getElementById('editHCityBook').value; 
+h.type = document.getElementById('editHType').value;
+     h.amt = parseFloat(document.getElementById('editHAmt').value);
+     h.curr = document.getElementById('editHCurr').value;
      h.sender = document.getElementById('editHSender').value; 
      h.receiver = document.getElementById('editHReceiver').value; 
      h.phone = document.getElementById('editHPhone').value; 
@@ -3849,7 +3888,88 @@ window.switchSettingsTab = function(tabId, btn) {
         renderInitialCapitalInputs();
     }
 };
-// --- پایان کدهای اصلاحی ---
+
+function renderCommissionCalc() {
+    // 1. جمع‌آوری اطلاعات کمیشن‌ها
+    let commData = {};
+    db.hawalas.forEach(h => {
+        if (h.comm && h.comm > 0) {
+            const city = h.cityBook;
+            const curr = h.commCurr || h.curr;
+            // ساخت شناسه یکتا برای هر ردیف
+            const key = city.replace(/\s+/g, '_') + '_' + curr.replace(/\s+/g, '_'); 
+            
+            if (!commData[key]) commData[key] = { city: city, curr: curr, total: 0, id: key };
+            commData[key].total += h.comm;
+        }
+    });
+
+    // 2. ساخت جدول با کادرهای ورودی برای هر شهر
+    const tbody = document.getElementById('commCalcBody');
+    tbody.innerHTML = '';
+    
+    Object.values(commData).forEach(d => {
+        tbody.innerHTML += `
+            <tr id="row_${d.id}">
+                <td style="font-weight:bold">${d.city}</td>
+                <td>${d.curr}</td>
+                <td style="font-weight:900; direction:ltr; font-size:16px;" data-total="${d.total}">${d.total.toLocaleString()}</td>
+                
+                <td style="background:rgba(0,230,118,0.05)">
+                    <div style="display:flex; align-items:center; gap:5px; margin-bottom:5px;">
+                        <input type="number" class="input" style="width:60px; padding:2px; margin:0; text-align:center; height:30px;" 
+                               value="40" oninput="updateCommRow('${d.id}')" id="p_off_${d.id}" placeholder="%">
+                        <span style="font-size:11px">%</span>
+                    </div>
+                    <div style="font-weight:900; color:var(--success); direction:ltr" id="res_off_${d.id}">0</div>
+                </td>
+
+                <td style="background:rgba(212,175,55,0.05)">
+                    <div style="display:flex; align-items:center; gap:5px; margin-bottom:5px;">
+                        <input type="number" class="input" style="width:60px; padding:2px; margin:0; text-align:center; height:30px;" 
+                               value="40" oninput="updateCommRow('${d.id}')" id="p_ag_${d.id}" placeholder="%">
+                        <span style="font-size:11px">%</span>
+                    </div>
+                    <div style="font-weight:900; color:var(--gold-primary); direction:ltr" id="res_ag_${d.id}">0</div>
+                </td>
+
+                <td style="background:rgba(255,82,82,0.05)">
+                    <div style="display:flex; align-items:center; gap:5px; margin-bottom:5px;">
+                        <input type="number" class="input" style="width:60px; padding:2px; margin:0; text-align:center; height:30px;" 
+                               value="20" oninput="updateCommRow('${d.id}')" id="p_tax_${d.id}" placeholder="%">
+                        <span style="font-size:11px">%</span>
+                    </div>
+                    <div style="font-weight:900; color:var(--danger); direction:ltr" id="res_tax_${d.id}">0</div>
+                </td>
+            </tr>
+        `;
+        // محاسبه اولیه برای این ردیف
+        setTimeout(() => updateCommRow(d.id), 50);
+    });
+}
+function updateCommRow(key) {
+    const row = document.getElementById(`row_${key}`);
+    if(!row) return;
+    
+    // گرفتن مبلغ کل
+    const totalCell = row.querySelector('[data-total]');
+    const total = parseFloat(totalCell.getAttribute('data-total')) || 0;
+
+    // گرفتن درصدها از کادرهای همان ردیف
+    const pOff = parseFloat(document.getElementById(`p_off_${key}`).value) || 0;
+    const pAg = parseFloat(document.getElementById(`p_ag_${key}`).value) || 0;
+    const pTax = parseFloat(document.getElementById(`p_tax_${key}`).value) || 0;
+
+    // محاسبه
+    const vOff = (total * pOff) / 100;
+    const vAg = (total * pAg) / 100;
+    const vTax = (total * pTax) / 100;
+
+    // نمایش نتیجه
+    document.getElementById(`res_off_${key}`).innerText = vOff.toLocaleString(undefined, {maximumFractionDigits:1});
+    document.getElementById(`res_ag_${key}`).innerText = vAg.toLocaleString(undefined, {maximumFractionDigits:1});
+    document.getElementById(`res_tax_${key}`).innerText = vTax.toLocaleString(undefined, {maximumFractionDigits:1});
+}
 </script>
 </body>
 </html>
