@@ -1218,15 +1218,16 @@ html[dir="ltr"] .submenu {
                             <label class="label">پیام تشکر (پاورقی فاکتور)</label>
                             <input id="setCompFooter" class="input" placeholder="از انتخاب شما متشکریم">
                         </div>
-                        <button class="btn btn-gold" style="width:100%; padding:15px; margin-top:15px" onclick="saveCompanyProfile()">
-<div style="margin-top:15px; border-top:1px dashed var(--gold-border); padding-top:15px;">
+                        <div style="margin-top:15px; border-top:1px dashed var(--gold-border); padding-top:15px;">
     <label class="label">لوگوی صرافی (جهت چاپ در رسید)</label>
     <input type="file" id="logoUploader" accept="image/*" class="input" onchange="saveLogo()">
     <img id="logoPreview" style="max-height:60px; display:none; margin-top:5px; border:1px solid #ccc;">
     <button class="btn btn-red btn-sm" onclick="clearLogo()" style="margin-top:5px">حذف لوگو</button>
 </div>
-                            ثبت و ذخیره مشخصات (Save)
-                        </button>
+
+<button class="btn btn-gold" style="width:100%; padding:15px; margin-top:15px" onclick="saveCompanyProfile()">
+    ثبت و ذخیره مشخصات (Save)
+</button>
                     </div>
                 </div>
 
@@ -3797,6 +3798,58 @@ function clearLogo() {
         document.getElementById('logoUploader').value = '';
     }
 }
+// --- شروع کدهای اصلاحی سرمایه اولیه ---
+
+// ۱. تابع جدید برای ساختن کادرهای ورودی سرمایه
+function renderInitialCapitalInputs() {
+    const container = document.getElementById('initialCapitalInputs');
+    if (!container) return;
+
+    let html = '';
+    // بررسی اینکه لیست ارزها موجود باشد
+    if(!db.currencies) db.currencies = ['USD', 'AFN', 'EUR'];
+    if(!db.initialCapital) db.initialCapital = {};
+    if(!db.avgRates) db.avgRates = {};
+
+    db.currencies.forEach(c => {
+        const cap = db.initialCapital[c] || 0;
+        const rate = db.avgRates[c] || 0;
+
+        html += `
+        <div style="background:rgba(0,0,0,0.1); padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid var(--gold-border);">
+            <div style="font-weight:bold; color:var(--gold-primary); margin-bottom:5px; border-bottom:1px solid var(--gold-border);">${c}</div>
+            <div class="grid-2">
+                <div>
+                    <label class="label">مبلغ سرمایه اولیه (موجودی شروع)</label>
+                    <input type="number" id="initCap_${c}" class="input" value="${cap}" onfocus="this.select()">
+                </div>
+                <div>
+                    <label class="label">نرخ میانگین خرید (Cost Rate)</label>
+                    <input type="number" id="initRate_${c}" class="input" value="${rate}" onfocus="this.select()" placeholder="مثلاً: 1">
+                </div>
+            </div>
+        </div>`;
+    });
+    
+    container.innerHTML = html;
+}
+
+// ۲. اصلاح تابع جابجایی تب‌ها (تا وقتی روی دکمه کلیک کردید، کادرها ظاهر شوند)
+window.switchSettingsTab = function(tabId, btn) {
+    document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.settings-menu-btn').forEach(b => b.classList.remove('active'));
+    
+    const target = document.getElementById(tabId);
+    if(target) target.classList.add('active');
+    
+    if(btn) btn.classList.add('active');
+
+    // اگر وارد تب سرمایه شدیم، کادرها را بساز
+    if (tabId === 'tab-capital') {
+        renderInitialCapitalInputs();
+    }
+};
+// --- پایان کدهای اصلاحی ---
 </script>
 </body>
 </html>
