@@ -3383,13 +3383,19 @@ function printH(id) {
     const h = db.hawalas.find(x => x.id === id); 
     if (!h) { alert('حواله یافت نشد.'); return; }
     
+    // پیدا کردن اطلاعات شهر برای استخراج نام نماینده
+    const cityObj = db.cities.find(c => c.code === h.cityBook);
+    const repName = cityObj && cityObj.rep ? cityObj.rep : '---';
+    const cityName = cityObj ? cityObj.name : h.cityBook;
+
+    // تبدیل مبلغ به حروف
     const amtInWords = numberToPersianWords(h.amt) + " " + h.curr;
-    const win = window.open('', '_blank', 'width=900,height=800');
+    const win = window.open('', '_blank', 'width=1000,height=1200');
     
     let content = '';
 
     if (h.type === 'Outgoing') {
-        // رسید سوپرمارکتی برای فرستنده
+        // --- رسید ارسالی (بدون تغییر) ---
         content = `
         <html><head><title>${h.displayId}</title>
         <style>@page { size: 80mm auto; margin: 0; } body { font-family: 'Vazirmatn', Tahoma; direction: rtl; padding: 5px; font-size: 10pt; width: 78mm; } .line { display: flex; justify-content: space-between; border-bottom: 1px dashed #000; padding: 3px 0; } .center { text-align: center; } .big { font-size: 14pt; font-weight: bold; }</style>
@@ -3400,31 +3406,116 @@ function printH(id) {
             <div class="line"><span>تاریخ:</span><span>${new Date(h.regDate).toLocaleDateString('fa-IR')}</span></div>
             <div class="line"><span>فرستنده:</span><span>${h.sender} ${h.senderLast||''}</span></div>
             <div class="line"><span>گیرنده:</span><span>${h.receiver} ${h.receiverLast||''}</span></div>
-            <div class="line"><span>مقصد:</span><span>${db.cities.find(c=>c.code===h.cityBook)?.name || h.cityBook}</span></div>
+            <div class="line"><span>مقصد:</span><span>${cityName}</span></div>
             <div class="line"><span>مبلغ:</span><span class="big" dir="ltr">${h.amt.toLocaleString()} ${h.curr}</span></div>
             <div class="line"><span>کمیشن:</span><span>${h.comm} ${h.commCurr || h.curr}</span></div>
             <div style="text-align:center; margin-top:10px; font-size:9pt;">${amtInWords}</div><br>
             <div class="center">امضاء فرستنده / متصدی</div><br><br>.
         </body></html>`;
     } else {
-        // رسید A4 استاندارد برای گیرنده
+        // --- رسید دریافتی (اصلاح شده با نام نماینده) ---
         content = `
-        <html><head><title>${h.displayId}</title>
-        <style>@page { size: A4; margin: 10mm; } body { font-family: 'Vazirmatn', Tahoma; direction: rtl; padding: 20px; font-size: 12pt; border: 2px double #000; height: 95vh; } .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; } .row { border-bottom: 1px dotted #ccc; padding-bottom: 5px; display: flex; justify-content: space-between; } .lbl { font-weight: bold; } .box-val { font-family: 'Courier New'; font-weight: 900; font-size: 14pt; } .id-place { margin-top: 50px; height: 350px; border: 3px dashed #ccc; display: flex; align-items: center; justify-content: center; color: #ccc; font-size: 20pt; font-weight: bold; }</style>
-        </head><body>
-            ${getPrintHeaderHTML()}
-            <h2 style="text-align:center; background:#eee; padding:5px; border:1px solid #000;">رسید دریافت حواله</h2>
-            <div style="display:flex; justify-content:space-between; margin:20px 0;"><div style="font-size:16pt; font-weight:bold;">کد: ${h.displayId}</div><div>تاریخ: ${new Date().toLocaleDateString('fa-IR')}</div></div>
-            <div class="grid">
-                <div style="border:1px solid #000; padding:10px; border-radius:10px;"><h3>گیرنده (شما)</h3><div class="row"><span class="lbl">نام:</span><span>${h.receiver} ${h.receiverLast||''}</span></div><div class="row"><span class="lbl">پدر:</span><span>${h.receiverFather||'-'}</span></div><div class="row"><span class="lbl">تماس:</span><span>${h.receiverPhone||'-'}</span></div><div class="row"><span class="lbl">تذکره:</span><span>${h.receiverID||'-'}</span></div></div>
-                <div style="border:1px solid #000; padding:10px; border-radius:10px;"><h3>فرستنده</h3><div class="row"><span class="lbl">نام:</span><span>${h.sender} ${h.senderLast||''}</span></div><div class="row"><span class="lbl">پدر:</span><span>${h.senderFather||'-'}</span></div><div class="row"><span class="lbl">شهر:</span><span>${h.cityBook}</span></div><div class="row"><span class="lbl">هدف:</span><span>${h.senderPurpose||'-'}</span></div></div>
+        <!DOCTYPE html>
+        <html lang="fa" dir="rtl">
+        <head>
+            <meta charset="utf-8">
+            <title>${h.displayId}</title>
+            <style>
+                @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;700;900&display=swap');
+                @page { size: A4; margin: 0; }
+                body { font-family: 'Vazirmatn', 'Tahoma', sans-serif; background: white; margin: 0; padding: 40px; color: #222; }
+                .voucher-container { width: 100%; max-width: 210mm; border: 2px solid #333; border-radius: 12px; padding: 30px; box-sizing: border-box; position: relative; }
+                .header-section { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 25px; }
+                .doc-title { font-size: 24px; font-weight: 900; color: #000; letter-spacing: -1px; border: 2px solid #000; padding: 8px 30px; border-radius: 50px; background: #fff; }
+                .meta-info { text-align: left; font-size: 13px; line-height: 1.6; }
+                .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px; }
+                .info-box { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 15px; }
+                .box-header { font-size: 14px; font-weight: 900; color: #555; border-bottom: 1px dashed #ddd; padding-bottom: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; }
+                .row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; }
+                .label { color: #777; font-weight: 500; }
+                .value { font-weight: 700; color: #000; }
+                .amount-panel { background: #f4f4f4; border-radius: 12px; padding: 20px; text-align: center; border: 1px solid #ddd; margin-bottom: 40px; }
+                .amt-label { font-size: 14px; color: #666; margin-bottom: 5px; }
+                .amt-digit { font-size: 32px; font-weight: 900; font-family: 'Courier New', monospace; color: #000; direction: ltr; letter-spacing: 1px; }
+                .amt-text { font-size: 16px; font-weight: 700; margin-top: 5px; color: #333; }
+                .footer-grid { display: flex; justify-content: space-around; margin-top: 20px; }
+                .sign-box { text-align: center; width: 200px; }
+                .sign-title { font-weight: bold; font-size: 14px; margin-bottom: 60px; }
+                .sign-line { border-top: 1px solid #000; width: 100%; display: block; }
+                
+                /* استایل جدید برای فوتر نمایندگی */
+                .rep-footer {
+                    margin-top: 20px;
+                    padding-top: 15px;
+                    border-top: 1px dashed #ccc;
+                    text-align: center;
+                    font-size: 12px;
+                    color: #444;
+                    background: #fff;
+                }
+                @media print { body { -webkit-print-color-adjust: exact; } }
+            </style>
+        </head>
+        <body>
+            <div class="voucher-container">
+                <div class="header-section">
+                    <div style="flex:1">${getPrintHeaderHTML()}</div>
+                    <div style="flex:1; text-align:center;">
+                        <div class="doc-title">رسید دریافت پول حواله </div>
+                        <div style="font-size:12px; color:#666; margin-top:5px;">INCOMING TRANSFER VOUCHER</div>
+                    </div>
+                    <div class="meta-info" style="flex:1">
+                        <div class="meta-item">شماره حواله : <b style="font-size:16px;">${h.displayId}</b></div>
+                        <div class="meta-item">تاریخ صدور: <b>${new Date(h.regDate).toLocaleDateString('fa-IR')}</b></div>
+                        <div class="meta-item">وضعیت: <b>پرداخت شده (تسویه)</b></div>
+                    </div>
+                </div>
+
+                <div class="info-grid">
+                    <div class="info-box">
+                        <div class="box-header"><span>مشخصات (گیرنده)</span><span>BENEFICIARY</span></div>
+                        <div class="row"><span class="label">نام و نام خانوادگی:</span><span class="value">${h.receiver} ${h.receiverLast||''}</span></div>
+                        <div class="row"><span class="label">نام پدر:</span><span class="value">${h.receiverFather||'-'}</span></div>
+                        <div class="row"><span class="label">شماره تماس:</span><span class="value" dir="ltr">${h.receiverPhone||'-'}</span></div>
+                        <div class="row"><span class="label">شماره تذکره/ID:</span><span class="value">${h.receiverID||'-'}</span></div>
+                    </div>
+                    <div class="info-box">
+                        <div class="box-header"><span>مشخصات فرستنده</span><span>SENDER</span></div>
+                        <div class="row"><span class="label">نام فرستنده:</span><span class="value">${h.sender} ${h.senderLast||''}</span></div>
+                        <div class="row"><span class="label">شهر مبدأ:</span><span class="value">${cityName}</span></div>
+                        <div class="row"><span class="label">بابت / توضیحات:</span><span class="value">${h.receiverPurpose || h.senderPurpose || '-'}</span></div>
+                        <div class="row"><span class="label">تاریخ اجرا:</span><span class="value">${new Date().toLocaleDateString('fa-IR')}</span></div>
+                    </div>
+                </div>
+
+                <div class="amount-panel">
+                    <div class="amt-label">مبلغ دریافتی / AMOUNT RECEIVED</div>
+                    <div class="amt-digit">*** ${h.amt.toLocaleString()} ${h.curr} ***</div>
+                    <div class="amt-text">${amtInWords}</div>
+                </div>
+
+                <div class="footer-grid">
+                    <div class="sign-box">
+                        <div class="sign-title">مهر و امضاء صرافی (تحویل دهنده)</div>
+                        <span class="sign-line"></span>
+                    </div>
+                    <div class="sign-box">
+                        <div class="sign-title">امضاء و اثر انگشت مشتری (گیرنده)</div>
+                        <span class="sign-line"></span>
+                    </div>
+                </div>
+
+                <div class="rep-footer">
+                    حواله وارده از طرف: <span style="font-weight:900; font-size:14px; color:#000;">${repName}</span>
+                </div>
             </div>
-            <div style="border:2px solid #000; padding:15px; text-align:center; background:#f9f9f9; margin-bottom:30px;"><div>مبلغ دریافتی:</div><div class="box-val" dir="ltr">${h.amt.toLocaleString()} ${h.curr}</div><div style="margin-top:5px; font-weight:bold;">${amtInWords}</div></div>
-            <div style="display:flex; justify-content:space-around; margin-bottom:20px;"><div>امضاء گیرنده<br><br>_______</div><div>مهر صرافی<br><br>_______</div></div>
-            <div class="id-place">محل کپی تذکره / پاسپورت</div>
-        </body></html>`;
+        </body>
+        </html>`;
     }
-    win.document.write(content); win.document.close(); win.print();
+    
+    win.document.write(content); 
+    win.document.close(); 
+    win.print();
 }
 
 function printCurrentTTForm() {
