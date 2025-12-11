@@ -2717,99 +2717,179 @@ function renderJournal() {
 }
 
 async function deleteLog(time, logId) {
-    const logEntry = db.journal.find(j => (j.id && j.id === logId) || j.time === time);
-    if (!logEntry) return;
-    const msg = currentLang === 'fa' ? 'آیا از حذف این گزارش و بازگشت اثر مالی آن اطمینان دارید؟' : 'Are you sure you want to reverse this transaction?';
-    if(confirm(msg)) {
-        if (logEntry.type && logEntry.data) {
-            const d = logEntry.data;
-            try {
-                if (logEntry.type === 'EXCHANGE') {
-                    if (d.isInternal) {
-                        if (d.cust && db.accounts[d.cust]) {
-                            db.accounts[d.cust] = db.accounts[d.cust].filter(acc => acc.id !== d.accId1 && acc.id !== d.accId2);
-                        }
-                    } else {
-                        if (d.baseCurr && d.quoteCurr) {
-                            if (d.direction === 'Buy') { db.cashBox[d.baseCurr] -= d.baseAmt; db.cashBox[d.quoteCurr] += d.quoteAmt; } 
-                            else { db.cashBox[d.baseCurr] += d.baseAmt; db.cashBox[d.quoteCurr] -= d.quoteAmt; }
-                        }
-                        if (d.profit && d.baseCurr) fxProfit[d.baseCurr] = (fxProfit[d.baseCurr] || 0) - d.profit;
-                    }
-                } 
-                else if (logEntry.type === 'TX') {
-                    if (d.type === 'debit') db.cashBox[d.curr] += d.amt; else db.cashBox[d.curr] -= d.amt;
-                    if (db.accounts[d.cust]) db.accounts[d.cust] = db.accounts[d.cust].filter(acc => acc.id !== d.accId);
-                }
-                else if (logEntry.type === 'TT_INTERNAL') {
-                    if (d.cust && d.accId && db.accounts[d.cust]) {
-                         db.accounts[d.cust] = db.accounts[d.cust].filter(acc => acc.id !== d.accId);
-                    }
-                }
-                else if (logEntry.type === 'TT_EXTERNAL') {
-                    db.cashBox[d.curr] -= d.amt;
-                }
-                else if (logEntry.type === 'ACC_TRANSFER') {
-                    if(db.accounts[d.s]) db.accounts[d.s] = db.accounts[d.s].filter(a => a.id !== d.id1);
-                    if(db.accounts[d.r]) db.accounts[d.r] = db.accounts[d.r].filter(a => a.id !== d.id2);
-                }
-                else if (logEntry.type === 'HAWALA_SUBMIT') {
-                    const hIndex = db.hawalas.findIndex(h => h.id === d.hawalaId);
-                    if (hIndex > -1) {
-                         const h = db.hawalas[hIndex];
-                         if (h.type === 'Outgoing' && !d.isInternal) { db.cashBox[h.curr] -= (h.amt + (h.comm || 0)); }
-                         if (d.isInternal && d.cust && d.accId && db.accounts[d.cust]) {
-                             db.accounts[d.cust] = db.accounts[d.cust].filter(acc => acc.id !== d.accId);
-                         }
-                         db.hawalas.splice(hIndex, 1);
-                    }
-                    if (d.hawalaId) {
-                        const parts = d.hawalaId.split('-');
-                        if(parts.length >= 3) {
-                             const city = parts[0];
-                             const typeChar = parts[1];
-                             const num = parseInt(parts[2]);
-                             const typeKey = typeChar === 'O' ? 'Outgoing' : 'Incoming';
-                             if (db.cityHawalaCounters[city] && db.cityHawalaCounters[city][typeKey] === num + 1) {
-                                 db.cityHawalaCounters[city][typeKey]--;
-                             }
+    // پیدا کردن لاگ مورد نظر
+    const logIndex = db.journal.findIndex(j => (j.id && j.id === logId) || j.time === time);
+    if (logIndex === -1) return;
+    const logEntry = db.journal[logIndex];
+
+    const msg = currentLang === 'fa' ? 
+        'آیا از حذف این عملیات و بازگشت تمام مبالغ به حالت قبل اطمینان دارید؟' : 
+        'Are you sure you want to reverse this transaction completely?';
+    
+    if (!confirm(msg)) return;
+
+    // شروع عملیات بازگشت
+    if (logEntry.type && logEntry.data) {
+        const d = logEntry.data;
+        try {
+            // --- 1. بازگشت حواله ثبت شده (مهمترین بخش برای مشکل شما) ---
+            if (logEntry.type === 'HAWALA_SUBMIT') {
+                const hIndex = db.hawalas.findIndex(h => h.id === d.hawalaId);
+                
+                // اگر حواله هنوز در لیست وجود دارد
+                if (hIndex > -1) {
+                    const h = db.hawalas[hIndex];
+                    
+                    // الف) بازگشت پول نقد (حواله ارسالی)
+                    // وقتی حواله ارسال کردید، پول گرفتید (+). پس الان باید کم شود (-).
+                    if (h.type === 'Outgoing' && !h.isInternal) { 
+                        db.cashBox[h.curr] = (db.cashBox[h.curr] || 0) - h.amt; // اصلاح شد: تفریق
+                        
+                        // کمیشن هم باید برگردد (کم شود)
+                        if(h.comm) {
+                            const cCurr = h.commCurr || h.curr;
+                            db.cashBox[cCurr] = (db.cashBox[cCurr] || 0) - h.comm; // اصلاح شد: تفریق
                         }
                     }
+                    // ب) بازگشت پول نقد (حواله دریافتی) - معمولا در زمان اجرا پول کم میشود نه ثبت
+                    // اما اگر در سیستم شما موقع ثبت دریافتی پولی جابجا شده باشد اینجا مدیریت میشود.
+                    // (در سیستم فعلی ثبت دریافتی Pending است و پولی جابجا نمیکند، پس کاری نداریم)
+
+                    // پ) حذف از حساب مشتری (اگر حساب‌دار بوده)
+                    if (h.isInternal && h.internalCust && db.accounts[h.internalCust]) {
+                        if(d.accId) {
+                             db.accounts[h.internalCust] = db.accounts[h.internalCust].filter(acc => acc.id !== d.accId);
+                        }
+                    }
+
+                    // ت) حذف خود حواله از لیست
+                    db.hawalas.splice(hIndex, 1);
                 }
-                else if (logEntry.type === 'HAWALA_EXEC_IN') {
-                    const h = db.hawalas.find(h => h.id === d.hawalaId);
-                    if(h) {
-                        h.status = 'Pending'; h.execDate = 0;
-                        if (d.isInternal && d.cust && d.accId) {
+
+                // ث) بازگشت شماره انداز (Counter)
+                if (d.hawalaId) {
+                    const parts = d.hawalaId.split('-');
+                    if(parts.length >= 3) {
+                        const city = parts[0];
+                        const typeChar = parts[1]; 
+                        const num = parseInt(parts[2]);
+                        const typeKey = typeChar === 'O' ? 'Outgoing' : 'Incoming';
+
+                        if (db.cityHawalaCounters[city] && db.cityHawalaCounters[city][typeKey] === num + 1) {
+                            db.cityHawalaCounters[city][typeKey]--;
+                        }
+                    }
+                }
+            }
+
+            // --- 2. بازگشت صرافی (Exchange) ---
+            else if (logEntry.type === 'EXCHANGE') {
+                if (d.isInternal) {
+                    if (d.cust && db.accounts[d.cust]) {
+                        db.accounts[d.cust] = db.accounts[d.cust].filter(acc => acc.id !== d.accId1 && acc.id !== d.accId2);
+                    }
+                } else {
+                    if (d.direction === 'Buy') { 
+                        // ما خرید کرده بودیم (ارز گرفتیم +، پول دادیم -)
+                        // بازگشت: ارز را میدهیم -، پول را پس میگیریم +
+                        db.cashBox[d.baseCurr] -= d.baseAmt; 
+                        db.cashBox[d.quoteCurr] += d.quoteAmt; 
+                    } else { 
+                        // ما فروخته بودیم (ارز دادیم -، پول گرفتیم +)
+                        // بازگشت: ارز را پس میگیریم +، پول را پس میدهیم -
+                        db.cashBox[d.baseCurr] += d.baseAmt; 
+                        db.cashBox[d.quoteCurr] -= d.quoteAmt; 
+                    }
+                }
+                if (d.profit && d.quoteCurr) {
+                    fxProfit[d.quoteCurr] = (fxProfit[d.quoteCurr] || 0) - d.profit;
+                }
+            } 
+
+            // --- 3. بازگشت تراکنش دستی (واریز/برداشت) ---
+            else if (logEntry.type === 'TX') {
+                if (d.type === 'debit') {
+                    // برداشت بوده (پول کم شده) -> پول برمیگردد (+)
+                    db.cashBox[d.curr] += d.amt; 
+                } else {
+                    // واریز بوده (پول زیاد شده) -> پول کم میشود (-)
+                    db.cashBox[d.curr] -= d.amt; 
+                }
+                if (db.accounts[d.cust]) {
+                    db.accounts[d.cust] = db.accounts[d.cust].filter(acc => acc.id !== d.accId);
+                }
+            }
+
+            // --- 4. بازگشت اجرای حواله ورودی (تسویه) ---
+            else if (logEntry.type === 'HAWALA_EXEC_IN') {
+                const h = db.hawalas.find(h => h.id === d.hawalaId);
+                if(h) {
+                    h.status = 'Pending'; 
+                    h.execDate = 0;
+                    
+                    if (d.isInternal && d.cust) {
+                        if(db.accounts[d.cust] && d.accId) {
                             db.accounts[d.cust] = db.accounts[d.cust].filter(acc => acc.id !== d.accId);
-                        } else {
-                            db.cashBox[d.curr] += d.amt;
                         }
-                    }
-                }
-                else if (logEntry.type === 'CRYPTO') {
-                    if (d.isInternal) {
-                         if (d.cust && db.accounts[d.cust]) {
-                             db.accounts[d.cust] = db.accounts[d.cust].filter(acc => acc.id !== d.accId);
-                         }
                     } else {
-                        if (d.type === 'Buy') {
-                            db.cashBox[d.curr] += d.fiatAmt;
-                        } else {
-                             db.cashBox[d.curr] -= d.fiatAmt;
-                             if(d.profit) fxProfit[d.curr] = (fxProfit[d.curr] || 0) - d.profit;
-                        }
-                    }
-                    if (d.cName && d.vol) {
-                         if (d.type === 'Buy') db.cashBox[d.cName] = (db.cashBox[d.cName] || 0) - d.vol;
-                         else db.cashBox[d.cName] = (db.cashBox[d.cName] || 0) + d.vol;
+                        // در اجرای حواله ورودی، ما پول پرداخت کرده بودیم (صندوق کم شده بود)
+                        // حالا حذف میکنیم، پس پول به صندوق برمیگردد (+)
+                        db.cashBox[d.curr] += d.amt;
                     }
                 }
-            } catch (err) { console.error(err); alert("Error reversing transaction."); return; }
+            }
+
+            // --- 5. بازگشت TT ---
+            else if (logEntry.type === 'TT_EXTERNAL') {
+                // در TT نقدی، پول دریافت کردیم (+)
+                // حالا حذف میکنیم، پول کم میشود (-)
+                db.cashBox[d.curr] -= d.amt;
+            }
+            else if (logEntry.type === 'TT_INTERNAL') {
+                if(db.accounts[d.cust]) db.accounts[d.cust] = db.accounts[d.cust].filter(acc => acc.id !== d.accId);
+            }
+
+            // --- 6. سایر موارد ---
+            else if (logEntry.type === 'ACC_TRANSFER') {
+                if(db.accounts[d.s]) db.accounts[d.s] = db.accounts[d.s].filter(a => a.id !== d.id1);
+                if(db.accounts[d.r]) db.accounts[d.r] = db.accounts[d.r].filter(a => a.id !== d.id2);
+            }
+            else if (logEntry.type === 'CRYPTO') {
+                if (d.type === 'Buy') {
+                    db.cashBox[d.cName] -= d.vol;
+                    if(d.isInternal && d.cust) {
+                         db.accounts[d.cust] = db.accounts[d.cust].filter(a => a.id !== d.accId);
+                    } else {
+                        db.cashBox[d.curr] += d.fiatAmt;
+                    }
+                } else {
+                    db.cashBox[d.cName] += d.vol;
+                    if(d.isInternal && d.cust) {
+                         db.accounts[d.cust] = db.accounts[d.cust].filter(a => a.id !== d.accId);
+                    } else {
+                        db.cashBox[d.curr] -= d.fiatAmt;
+                    }
+                    if(d.profit) fxProfit[d.curr] = (fxProfit[d.curr] || 0) - d.profit;
+                }
+            }
+
+        } catch (err) { 
+            console.error(err); 
+            alert("خطا در بازگشت اطلاعات."); 
+            return; 
         }
-        db.journal = db.journal.filter(j => j.time !== time);
-        await saveDB(); renderJournal(); renderDashboard(); alert(currentLang === 'fa' ? "بازگردانی شد." : "Reversed.");
     }
+
+    // حذف خود لاگ
+    db.journal.splice(logIndex, 1);
+    
+    await saveDB(); 
+    renderJournal(); 
+    renderDashboard(); 
+    if(document.getElementById('hawala').classList.contains('active')) filterHawala();
+    if(document.getElementById('accounts').classList.contains('active')) loadCustomerLedger();
+
+    alert(currentLang === 'fa' ? "عملیات بازگردانی شد و موجودی‌ها اصلاح گردید." : "Reversed successfully.");
 }
 function openSettings() { 
     updateUI(); 
@@ -2823,13 +2903,24 @@ function openSettings() {
 }
 
 function getNewHawalaNumber(cityCode, type) {
-    if (!db.cityHawalaCounters) db.cityHawalaCounters = {};
-    if (!db.cityHawalaCounters[cityCode]) { db.cityHawalaCounters[cityCode] = { Outgoing: 1001, Incoming: 1001 }; }
-    if (!db.cityHawalaCounters[cityCode].Outgoing) db.cityHawalaCounters[cityCode].Outgoing = 1001;
-    if (!db.cityHawalaCounters[cityCode].Incoming) db.cityHawalaCounters[cityCode].Incoming = 1001;
-    const currentCount = db.cityHawalaCounters[cityCode][type];
-    db.cityHawalaCounters[cityCode][type]++; 
-    return currentCount;
+    // 1. لیست تمام شماره کتاب‌های موجود برای این شهر و این نوع (ارسالی/دریافتی) را می‌گیریم
+    const existingNumbers = db.hawalas
+        .filter(h => h.cityBook === cityCode && h.type === type)
+        .map(h => parseInt(h.bookNum)) // تبدیل به عدد
+        .sort((a, b) => a - b); // مرتب‌سازی از کوچک به بزرگ
+
+    // 2. از 1001 شروع می‌کنیم و چک می‌کنیم کدام عدد خالی است
+    let nextNum = 1001;
+    for (let num of existingNumbers) {
+        if (num === nextNum) {
+            nextNum++; // اگر این شماره وجود دارد، برو سراغ بعدی
+        } else if (num > nextNum) {
+            // اگر شماره موجود بزرگتر از شماره مورد نظر ماست، یعنی اینجا (nextNum) خالی است
+            return nextNum;
+        }
+    }
+    // 3. اگر هیچ جای خالی در بین اعداد نبود، عدد بعدی را برمی‌گرداند
+    return nextNum;
 }
 
 function setHawalaCustType(type) {
@@ -3353,30 +3444,155 @@ function printLedger() {
 }
 
 function printHawalaList() {
-    const filterCity = document.getElementById('filterHCity').value; 
-    const filterType = document.getElementById('filterHType').value; 
+    // 1. گرفتن فیلترهای انتخاب شده
+    const filterCity = document.getElementById('filterHCity').value;
+    const filterType = document.getElementById('filterHType').value;
     const filterStatus = document.getElementById('filterHStatus').value;
-    
-    if (filterType === 'All') { alert("لطفاً برای چاپ کتاب، نوع (ارسالی یا دریافتی) را مشخص کنید."); return; }
 
-    const filtered = db.hawalas.filter(h => (filterCity === 'All' || h.cityBook === filterCity) && (h.type === filterType) && (filterStatus === 'All' || h.status === filterStatus)).sort((a, b) => a.regDate - b.regDate);
-
-    const title = filterType === 'Outgoing' ? 'کتاب حوالجات ارسالی' : 'کتاب حوالجات دریافتی';
-    const win = window.open('', '_blank', 'width=1200,height=800');
-    
-    let totalHtml = ''; const totals = {}; filtered.forEach(h => { totals[h.curr] = (totals[h.curr] || 0) + h.amt; }); for(let c in totals) totalHtml += `<span style="margin:0 10px; border:1px solid #000; padding:2px 5px;">مجموع ${c}: <b>${totals[c].toLocaleString()}</b></span>`;
-
-    let tableHead = '', tableRows = '';
-    if (filterType === 'Outgoing') {
-        tableHead = `<tr><th>#</th><th>کد</th><th>تاریخ</th><th>فرستنده</th><th>تخلص</th><th>پدر</th><th>موبایل</th><th>تذکره</th><th style="background:#eee">گیرنده</th><th style="background:#eee">پدر</th><th style="background:#eee">موبایل</th><th>مبلغ</th><th>ارز</th><th>کمیشن</th><th>منبع</th><th>هدف</th></tr>`;
-        tableRows = filtered.map((h, i) => `<tr><td>${i+1}</td><td style="font-weight:bold">${h.displayId}</td><td>${new Date(h.regDate).toLocaleDateString('fa-IR')}</td><td>${h.sender}</td><td>${h.senderLast||''}</td><td>${h.senderFather||''}</td><td>${h.senderPhone||''}</td><td>${h.senderID||''}</td><td style="background:#fafafa">${h.receiver}</td><td style="background:#fafafa">${h.receiverFather||''}</td><td style="background:#fafafa">${h.receiverPhone||''}</td><td dir="ltr" style="font-weight:bold">${h.amt.toLocaleString()}</td><td>${h.curr}</td><td>${h.comm}</td><td>${h.senderSource||''}</td><td>${h.senderPurpose||''}</td></tr>`).join('');
-    } else {
-        tableHead = `<tr><th>#</th><th>کد</th><th>تاریخ ثبت</th><th>تاریخ اجرا</th><th>دریافت کننده</th><th>تخلص</th><th>پدر</th><th>موبایل</th><th>تذکره</th><th>مبلغ</th><th>ارز</th><th>منبع</th><th>هدف</th><th>جزئیات</th></tr>`;
-        tableRows = filtered.map((h, i) => `<tr><td>${i+1}</td><td style="font-weight:bold">${h.displayId}</td><td>${new Date(h.regDate).toLocaleDateString('fa-IR')}</td><td>${h.execDate ? new Date(h.execDate).toLocaleDateString('fa-IR') : '-'}</td><td>${h.receiver}</td><td>${h.receiverLast||''}</td><td>${h.receiverFather||''}</td><td>${h.receiverPhone||''}</td><td>${h.receiverID||''}</td><td dir="ltr" style="font-weight:bold">${h.amt.toLocaleString()}</td><td>${h.curr}</td><td>${h.receiverSource||''}</td><td>${h.receiverPurpose||''}</td><td>${h.receiverPurpose||''}</td></tr>`).join('');
+    if (filterType === 'All') {
+        alert("لطفاً برای چاپ کتاب استاندارد، نوع (ارسالی یا دریافتی) را مشخص کنید.");
+        return;
     }
 
-    win.document.write(`<html><head><title>${title}</title><style>@page { size: A4 landscape; margin: 5mm; } body { font-family: 'Vazirmatn', Tahoma; direction: rtl; font-size: 9pt; } table { width: 100%; border-collapse: collapse; margin-top: 10px; } th, td { border: 1px solid #444; padding: 4px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; } th { background: #ddd; font-weight: bold; font-size: 8pt; } tr:nth-child(even) { background: #f9f9f9; } .header-box { text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; }</style></head><body><div class="header-box">${getPrintHeaderHTML()}<h3>${title}</h3><div style="margin-top:5px;">${totalHtml}</div></div><table><thead>${tableHead}</thead><tbody>${tableRows}</tbody></table></body></html>`);
-    win.document.close(); win.print();
+    // 2. فیلتر کردن داده‌ها
+    const filtered = db.hawalas.filter(h =>
+        (filterCity === 'All' || h.cityBook === filterCity) &&
+        (h.type === filterType) &&
+        (filterStatus === 'All' || h.status === filterStatus)
+    ).sort((a, b) => a.regDate - b.regDate);
+
+    // 3. محاسبه جمع کل برای بالای صفحه
+    let totalAmt = 0;
+    let totalComm = 0;
+    let mainCurr = filtered.length > 0 ? filtered[0].curr : '';
+
+    filtered.forEach(h => {
+        totalAmt += h.amt;
+        if(h.comm) totalComm += h.comm;
+    });
+
+    // 4. ساخت ردیف‌های جدول
+    const tableRows = filtered.map((h, i) => {
+        // آماده‌سازی داده‌ها
+        const sName = `${h.sender} ${h.senderLast||''}`;
+        const sFather = h.senderFather ? `ولد: ${h.senderFather}` : '';
+        const sPhone = h.senderPhone ? `موبایل: ${h.senderPhone}` : '';
+        const sID = h.senderID ? `تذکره: ${h.senderID}` : '';
+
+        const rName = `${h.receiver} ${h.receiverLast||''}`;
+        const rFather = h.receiverFather ? `ولد: ${h.receiverFather}` : '';
+        const rPhone = h.receiverPhone ? `موبایل: ${h.receiverPhone}` : '';
+        // *** تغییر این قسمت: نمایش تذکره گیرنده به جای شهر ***
+        const rID = h.receiverID ? `تذکره: ${h.receiverID}` : ''; 
+
+        const dateStr = new Date(h.regDate).toLocaleDateString('fa-IR');
+        const desc = h.receiverPurpose || h.senderPurpose || '-';
+
+        return `
+            <tr>
+                <td style="text-align:center;">${i + 1}</td>
+                <td style="text-align:center;">
+                    <b style="font-size:12px">${h.displayId || h.id}</b>
+                </td>
+                
+                <td class="info-cell">
+                    <div class="main-name">${sName}</div>
+                    ${sFather ? `<div><span class="sub-label">${sFather}</span></div>` : ''}
+                    ${sPhone ? `<div><span class="sub-label">${sPhone}</span></div>` : ''}
+                    ${sID ? `<div><span class="sub-label">${sID}</span></div>` : ''}
+                </td>
+
+                <td class="info-cell">
+                    <div class="main-name">${rName}</div>
+                    ${rFather ? `<div><span class="sub-label">${rFather}</span></div>` : ''}
+                    ${rPhone ? `<div><span class="sub-label">${rPhone}</span></div>` : ''}
+                    ${rID ? `<div><span class="sub-label">${rID}</span></div>` : ''}
+                </td>
+
+                <td style="text-align:center;">
+                    <b style="font-size:13px">${h.amt.toLocaleString()}</b>
+                    <div style="font-size:10px; color:#555">${h.curr}</div>
+                </td>
+                <td style="text-align:center;">${h.comm || 0}</td>
+                
+                <td style="text-align:center; font-size:11px;">${desc}</td>
+                <td style="text-align:center; font-size:11px;">${dateStr}</td>
+            </tr>
+        `;
+    }).join('');
+
+    // 5. باز کردن پنجره چاپ
+    const title = filterType === 'Outgoing' ? 'کتاب حوالجات ارسالی (Senders)' : 'کتاب حوالجات دریافتی (Receivers)';
+    const win = window.open('', '_blank', 'width=1150,height=800');
+
+    win.document.write(`
+        <!DOCTYPE html>
+        <html dir="rtl" lang="fa">
+        <head>
+            <title>${title}</title>
+            <style>
+                @page { size: A4 portrait; margin: 0.5cm; }
+                body { font-family: 'Tahoma', 'Vazirmatn', sans-serif; background: #fff; padding: 10px; margin: 0; }
+                
+                .summary-box {
+                    display: flex; justify-content: space-around; align-items: center;
+                    border: 2px solid #000; background: #f0f0f0; border-radius: 5px;
+                    padding: 10px; margin-bottom: 15px; font-size: 13px;
+                }
+                .summary-item { border-left: 1px solid #ccc; padding-left: 15px; }
+                .summary-item:last-child { border-left: none; }
+                .summary-item b { font-size: 15px; margin-right: 5px; }
+
+                table { width: 100%; border-collapse: collapse; font-size: 11px; }
+                th, td { border: 1px solid #444; padding: 4px; vertical-align: top; }
+                th { background: #e0e0e0; font-weight: bold; text-align: center; font-size: 12px; padding: 8px 0; }
+                
+                .info-cell div { margin-bottom: 2px; line-height: 1.3; }
+                .main-name { font-weight: bold; font-size: 12px; border-bottom: 1px dashed #ccc; padding-bottom: 2px; margin-bottom: 3px !important; display:block; }
+                .sub-label { color: #555; font-size: 10px; }
+
+                @media print {
+                    body { margin: 0; }
+                    .summary-box { background: #fff !important; border: 2px solid #000; }
+                    th { background: #eee !important; -webkit-print-color-adjust: exact; }
+                }
+            </style>
+        </head>
+        <body>
+            ${getPrintHeaderHTML()}
+            <h3 style="text-align:center; margin:5px 0 10px 0;">${title}</h3>
+
+            <div class="summary-box">
+                <div class="summary-item">تعداد کل: <b>${filtered.length}</b> فقره</div>
+                <div class="summary-item">مجموع مبالغ: <b dir="ltr">${totalAmt.toLocaleString()}</b> <span style="font-size:10px">(${mainCurr} Mix)</span></div>
+                <div class="summary-item">مجموع کمیشن: <b dir="ltr">${totalComm.toLocaleString()}</b></div>
+                <div class="summary-item">تاریخ چاپ: ${new Date().toLocaleDateString('fa-IR')}</div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:4%">#</th>
+                        <th style="width:10%">شماره</th>
+                        <th style="width:25%">مشخصات فرستنده</th>
+                        <th style="width:25%">مشخصات گیرنده</th>
+                        <th style="width:12%">مبلغ</th>
+                        <th style="width:8%">کمیشن</th>
+                        <th style="width:10%">جزئیات</th>
+                        <th style="width:8%">تاریخ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tableRows}
+                </tbody>
+            </table>
+        </body>
+        </html>
+    `);
+
+    win.document.close();
+    win.focus();
+    setTimeout(() => { win.print(); }, 500); 
 }
 
 function printH(id) {
