@@ -3413,7 +3413,7 @@ function printH(id) {
             <div class="center">امضاء فرستنده / متصدی</div><br><br>.
         </body></html>`;
     } else {
-        // --- رسید دریافتی (اصلاح شده با نام نماینده) ---
+        // --- رسید دریافتی (اصلاح شده: جابجایی تاریخ‌ها) ---
         content = `
         <!DOCTYPE html>
         <html lang="fa" dir="rtl">
@@ -3442,17 +3442,7 @@ function printH(id) {
                 .sign-box { text-align: center; width: 200px; }
                 .sign-title { font-weight: bold; font-size: 14px; margin-bottom: 60px; }
                 .sign-line { border-top: 1px solid #000; width: 100%; display: block; }
-                
-                /* استایل جدید برای فوتر نمایندگی */
-                .rep-footer {
-                    margin-top: 20px;
-                    padding-top: 15px;
-                    border-top: 1px dashed #ccc;
-                    text-align: center;
-                    font-size: 12px;
-                    color: #444;
-                    background: #fff;
-                }
+                .rep-footer { margin-top: 20px; padding-top: 15px; border-top: 1px dashed #ccc; text-align: center; font-size: 12px; color: #444; background: #fff; }
                 @media print { body { -webkit-print-color-adjust: exact; } }
             </style>
         </head>
@@ -3465,8 +3455,8 @@ function printH(id) {
                         <div style="font-size:12px; color:#666; margin-top:5px;">INCOMING TRANSFER VOUCHER</div>
                     </div>
                     <div class="meta-info" style="flex:1">
-                        <div class="meta-item">شماره حواله : <b style="font-size:16px;">${h.displayId}</b></div>
-                        <div class="meta-item">تاریخ صدور: <b>${new Date(h.regDate).toLocaleDateString('fa-IR')}</b></div>
+                        <div class="meta-item">شماره سند: <b style="font-size:16px;">${h.displayId}</b></div>
+                        <div class="meta-item">تاریخ اجرا: <b>${new Date().toLocaleDateString('fa-IR')}</b></div>
                         <div class="meta-item">وضعیت: <b>پرداخت شده (تسویه)</b></div>
                     </div>
                 </div>
@@ -3484,7 +3474,7 @@ function printH(id) {
                         <div class="row"><span class="label">نام فرستنده:</span><span class="value">${h.sender} ${h.senderLast||''}</span></div>
                         <div class="row"><span class="label">شهر مبدأ:</span><span class="value">${cityName}</span></div>
                         <div class="row"><span class="label">بابت / توضیحات:</span><span class="value">${h.receiverPurpose || h.senderPurpose || '-'}</span></div>
-                        <div class="row"><span class="label">تاریخ اجرا:</span><span class="value">${new Date().toLocaleDateString('fa-IR')}</span></div>
+                        <div class="row"><span class="label">تاریخ صدور:</span><span class="value">${new Date(h.regDate).toLocaleDateString('fa-IR')}</span></div>
                     </div>
                 </div>
 
