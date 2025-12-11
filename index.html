@@ -4230,62 +4230,160 @@ window.switchSettingsTab = function(tabId, btn) {
     }
 };
 
+// تابع نمایش و محاسبه کمیشن‌ها (اصلاح شده: دسته‌بندی شهری + درصد واحد)
 function renderCommissionCalc() {
-    // 1. جمع‌آوری اطلاعات کمیشن‌ها
-    let commData = {};
+    // 1. جمع‌آوری اطلاعات: شهر -> ارز -> مجموع کمیشن
+    // ساختار دیتا: { "Kabul": { "USD": 100, "AFN": 5000 }, "Herat": { ... } }
+    let cityData = {};
+    
     db.hawalas.forEach(h => {
         if (h.comm && h.comm > 0) {
             const city = h.cityBook;
+            // استفاده از ارز کمیشن یا اگر نبود ارز خود حواله
             const curr = h.commCurr || h.curr;
-            // ساخت شناسه یکتا برای هر ردیف
-            const key = city.replace(/\s+/g, '_') + '_' + curr.replace(/\s+/g, '_'); 
             
-            if (!commData[key]) commData[key] = { city: city, curr: curr, total: 0, id: key };
-            commData[key].total += h.comm;
+            if (!cityData[city]) cityData[city] = {};
+            if (!cityData[city][curr]) cityData[city][curr] = 0;
+            
+            cityData[city][curr] += h.comm;
         }
     });
 
-    // 2. ساخت جدول با کادرهای ورودی برای هر شهر
-    const tbody = document.getElementById('commCalcBody');
-    tbody.innerHTML = '';
+    const container = document.getElementById('commCalcBody');
+    // چون طراحی عوض شد، باید جدول قبلی را پاک کنیم و دیزاین جدید بسازیم
+    // اما چون در HTML شما <table> ثابت است، ما باید کل محتوای کارت را عوض کنیم یا ساختار جدول را تغییر دهیم.
+    // راه بهتر: جدول HTML را نادیده می‌گیریم و داخل کانتینر اصلی کارت، باکس‌های جداگانه می‌سازیم.
     
-    Object.values(commData).forEach(d => {
-        tbody.innerHTML += `
-            <tr id="row_${d.id}">
-                <td style="font-weight:bold">${d.city}</td>
-                <td>${d.curr}</td>
-                <td style="font-weight:900; direction:ltr; font-size:16px;" data-total="${d.total}">${d.total.toLocaleString()}</td>
+    const pageContainer = document.querySelector('#commissions .card');
+    
+    // هدر کارت ثابت بماند، محتوا تغییر کند
+    let htmlContent = `
+        <div class="card-header">
+            <span>محاسبه و تقسیم سود (به تفکیک شهر)</span>
+            <button class="btn btn-gold" onclick="renderCommissionCalc()">🔄 محاسبه مجدد</button>
+        </div>
+        <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">
+            * درصدها را برای هر شهر تنظیم کنید تا روی تمام ارزهای آن شهر اعمال شود.
+        </p>
+    `;
+
+    if (Object.keys(cityData).length === 0) {
+        htmlContent += `<div style="text-align:center; padding:20px;">هیچ کمیشنی برای محاسبه وجود ندارد.</div>`;
+        pageContainer.innerHTML = htmlContent;
+        return;
+    }
+
+    // حلقه روی شهرها
+    for (let city in cityData) {
+        // ساخت شناسه امن برای شهر (حذف فاصله و ...)
+        const safeCityId = city.replace(/\s+/g, '_');
+        
+        htmlContent += `
+        <div style="background:rgba(255,255,255,0.02); border:1px solid var(--gold-border); border-radius:12px; margin-bottom:25px; overflow:hidden;">
+            
+            <div style="background:rgba(212,175,55,0.1); padding:15px; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; border-bottom:1px dashed var(--gold-border);">
+                <div style="font-weight:900; font-size:18px; color:var(--gold-primary); margin-bottom:10px;">
+                    🏙 ${city}
+                </div>
                 
-                <td style="background:rgba(0,230,118,0.05)">
-                    <div style="display:flex; align-items:center; gap:5px; margin-bottom:5px;">
-                        <input type="number" class="input" style="width:60px; padding:2px; margin:0; text-align:center; height:30px;" 
-                               value="40" oninput="updateCommRow('${d.id}')" id="p_off_${d.id}" placeholder="%">
-                        <span style="font-size:11px">%</span>
+                <div style="display:flex; gap:15px; align-items:center; flex-wrap:wrap;">
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <span style="font-size:12px; color:var(--success)">سهم ما:</span>
+                        <input type="number" class="input" style="width:60px; margin:0; text-align:center; height:35px; border-color:var(--success)" 
+                               value="40" id="pc_share_${safeCityId}" oninput="updateCityCalc('${safeCityId}')"> %
                     </div>
-                    <div style="font-weight:900; color:var(--success); direction:ltr" id="res_off_${d.id}">0</div>
-                </td>
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <span style="font-size:12px; color:var(--gold-primary)">نماینده:</span>
+                        <input type="number" class="input" style="width:60px; margin:0; text-align:center; height:35px; border-color:var(--gold-primary)" 
+                               value="40" id="pc_ag_${safeCityId}" oninput="updateCityCalc('${safeCityId}')"> %
+                    </div>
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <span style="font-size:12px; color:var(--danger)">هزینه:</span>
+                        <input type="number" class="input" style="width:60px; margin:0; text-align:center; height:35px; border-color:var(--danger)" 
+                               value="20" id="pc_tax_${safeCityId}" oninput="updateCityCalc('${safeCityId}')"> %
+                    </div>
+                </div>
+            </div>
 
-                <td style="background:rgba(212,175,55,0.05)">
-                    <div style="display:flex; align-items:center; gap:5px; margin-bottom:5px;">
-                        <input type="number" class="input" style="width:60px; padding:2px; margin:0; text-align:center; height:30px;" 
-                               value="40" oninput="updateCommRow('${d.id}')" id="p_ag_${d.id}" placeholder="%">
-                        <span style="font-size:11px">%</span>
-                    </div>
-                    <div style="font-weight:900; color:var(--gold-primary); direction:ltr" id="res_ag_${d.id}">0</div>
-                </td>
+            <div class="table-container" style="padding:0;">
+                <table style="margin:0; border:none;">
+                    <thead>
+                        <tr>
+                            <th style="background:transparent; border-bottom:1px solid #444;">ارز</th>
+                            <th style="background:transparent; border-bottom:1px solid #444;">مجموع کل کمیشن</th>
+                            <th style="background:transparent; border-bottom:1px solid #444; color:var(--success)">✅ سهم ما</th>
+                            <th style="background:transparent; border-bottom:1px solid #444; color:var(--gold-primary)">🤝 سهم نماینده</th>
+                            <th style="background:transparent; border-bottom:1px solid #444; color:var(--danger)">📉 هزینه/مالیات</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+        
+        // حلقه روی ارزهای آن شهر
+        for (let curr in cityData[city]) {
+            const total = cityData[city][curr];
+            const safeCurrId = curr.replace(/\s+/g, '_');
+            // آیدی‌های منحصر به فرد برای هر سلول
+            const rowId = `${safeCityId}_${safeCurrId}`;
+            
+            htmlContent += `
+                        <tr>
+                            <td style="font-weight:bold;">${curr}</td>
+                            <td style="font-weight:900; font-size:16px;" dir="ltr" id="total_${rowId}" data-val="${total}">
+                                ${total.toLocaleString()}
+                            </td>
+                            <td style="font-weight:bold; color:var(--success);" dir="ltr" id="res_share_${rowId}">0</td>
+                            <td style="font-weight:bold; color:var(--gold-primary);" dir="ltr" id="res_ag_${rowId}">0</td>
+                            <td style="font-weight:bold; color:var(--danger);" dir="ltr" id="res_tax_${rowId}">0</td>
+                        </tr>
+            `;
+        }
 
-                <td style="background:rgba(255,82,82,0.05)">
-                    <div style="display:flex; align-items:center; gap:5px; margin-bottom:5px;">
-                        <input type="number" class="input" style="width:60px; padding:2px; margin:0; text-align:center; height:30px;" 
-                               value="20" oninput="updateCommRow('${d.id}')" id="p_tax_${d.id}" placeholder="%">
-                        <span style="font-size:11px">%</span>
-                    </div>
-                    <div style="font-weight:900; color:var(--danger); direction:ltr" id="res_tax_${d.id}">0</div>
-                </td>
-            </tr>
+        htmlContent += `
+                    </tbody>
+                </table>
+            </div>
+            <input type="hidden" id="currencies_${safeCityId}" value="${Object.keys(cityData[city]).join(',')}">
+        </div>
         `;
-        // محاسبه اولیه برای این ردیف
-        setTimeout(() => updateCommRow(d.id), 50);
+    }
+
+    pageContainer.innerHTML = htmlContent;
+
+    // اجرای محاسبه اولیه برای همه شهرها
+    setTimeout(() => {
+        for (let city in cityData) {
+            updateCityCalc(city.replace(/\s+/g, '_'));
+        }
+    }, 100);
+}
+
+// تابع محاسبه‌گر جدید (یک شهر را می‌گیرد و تمام ارزهایش را آپدیت می‌کند)
+function updateCityCalc(cityId) {
+    // 1. گرفتن درصدهای آن شهر
+    const pShare = parseFloat(document.getElementById(`pc_share_${cityId}`).value) || 0;
+    const pAg = parseFloat(document.getElementById(`pc_ag_${cityId}`).value) || 0;
+    const pTax = parseFloat(document.getElementById(`pc_tax_${cityId}`).value) || 0;
+
+    // 2. پیدا کردن ارزهای موجود در آن شهر
+    const currString = document.getElementById(`currencies_${cityId}`).value;
+    if (!currString) return;
+    const currencies = currString.split(',');
+
+    // 3. محاسبه برای تک تک ارزها
+    currencies.forEach(curr => {
+        const safeCurr = curr.replace(/\s+/g, '_'); // اگر فاصله داشت
+        const rowId = `${cityId}_${safeCurr}`;
+        
+        const totalEl = document.getElementById(`total_${rowId}`);
+        const total = parseFloat(totalEl.getAttribute('data-val')) || 0;
+
+        const valShare = (total * pShare) / 100;
+        const valAg = (total * pAg) / 100;
+        const valTax = (total * pTax) / 100;
+
+        document.getElementById(`res_share_${rowId}`).innerText = valShare.toLocaleString(undefined, {maximumFractionDigits:1});
+        document.getElementById(`res_ag_${rowId}`).innerText = valAg.toLocaleString(undefined, {maximumFractionDigits:1});
+        document.getElementById(`res_tax_${rowId}`).innerText = valTax.toLocaleString(undefined, {maximumFractionDigits:1});
     });
 }
 function updateCommRow(key) {
