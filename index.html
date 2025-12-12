@@ -2464,41 +2464,73 @@ function renderAnalysis() {
     const tbody = document.getElementById('analysisBody');
     tbody.innerHTML = '';
     
-    // محاسبه مانده حساب مشتریان
+    // 1. محاسبه مانده حساب مشتریان
     let customerBalances = {};
     for (let custName in db.accounts) {
         db.accounts[custName].forEach(tx => {
             if (!customerBalances[tx.curr]) customerBalances[tx.curr] = 0;
+            // بدهکار (+) یعنی مشتری باید بدهد، بستانکار (-) یعنی ما باید بدهیم
             customerBalances[tx.curr] += (tx.debit - tx.credit);
         });
     }
 
-    // محاسبه مانده کتاب حواله
+    // 2. محاسبه مانده کتاب حواله (اصلاح شده)
     let cityBalances = {};
     db.hawalas.forEach(h => {
         if (!cityBalances[h.curr]) cityBalances[h.curr] = 0;
-        if (h.type === 'Outgoing') cityBalances[h.curr] += h.amt; 
-        else if (h.type === 'Incoming') cityBalances[h.curr] -= h.amt; 
-        if (h.comm) cityBalances[h.curr] += h.comm; 
+        
+        // فقط مبلغ اصل حواله (amt) روی حساب شهر تاثیر می‌گذارد
+        if (h.type === 'Outgoing') {
+            // ما فرستادیم، پس به نماینده بدهکار شدیم (پول نقد گرفتیم)
+            cityBalances[h.curr] += h.amt; 
+        } 
+        else if (h.type === 'Incoming') {
+            // ما دریافت کردیم (باید پرداخت کنیم)، پس از نماینده طلبکار شدیم
+            cityBalances[h.curr] -= h.amt; 
+        } 
+        
+        // *** خط اشتباه قبلی حذف شد ***
+        // دیگر کمیشن به حساب شهر اضافه نمی‌شود چون سود شماست و در صندوق موجود است.
     });
 
+    // 3. نمایش جدول
     let grandTotalUSD = 0;
 
     db.currencies.forEach(curr => {
+        // موجودی فیزیکی + سرمایه اولیه
         const cash = (db.cashBox[curr] || 0) + (db.initialCapital[curr] || 0);
-        const custBal = customerBalances[curr] || 0;
+        
+        // طلب ما از مشتریان (اگر مثبت باشد سرمایه ماست)
+        // اما در فرمول خالص: (صندوق) - (بدهی به مردم/نماینده)
+        // اگر customerBalances مثبت باشد یعنی مشتری بدهکار است (دارایی ما)
+        // اگر cityBalances مثبت باشد یعنی ما به نماینده بدهکاریم (بدهی ما)
+        
+        const custBal = customerBalances[curr] || 0; 
         const cityBal = cityBalances[curr] || 0;
-        const netCapital = cash - custBal - cityBal;
+
+        // فرمول صحیح سرمایه خالص:
+        // موجودی نقد + (طلب از مشتری) - (بدهی به نماینده)
+        // نکته: در این سیستم debt/credit طوری تنظیم شده که:
+        // custBal مثبت = مشتری بدهکار است (پول ما دست مردم) -> باید جمع شود
+        // cityBal مثبت = ما بدهکاریم (پول نماینده دست ما) -> باید کم شود
+        
+        // اما برای سادگی در کد قبلی از منطق Cash - Obligations استفاده شده بود.
+        // بیایید منطق صحیح حسابداری را پیاده کنیم:
+        // Net = Cash + (Receivables) - (Payables)
+        
+        // در سیستم شما:
+        // custBal: (debit - credit). مثبت یعنی مشتری بدهکار است. (این دارایی است +)
+        // cityBal: (Outgoing - Incoming). مثبت یعنی ما پول گرفتیم فرستادیم (بدهکاریم به نماینده). (این بدهی است -)
+        
+        const netCapital = cash + custBal - cityBal;
 
         // نرخ پیش فرض
         let defaultRate = '';
         if(db.avgRates && db.avgRates[curr]) defaultRate = db.avgRates[curr];
         else if(curr === 'USD' || curr === 'USDT' || curr === 'DAI') defaultRate = '1';
         
-        // اگر قبلا ذخیره شده ضرب/تقسیم را بازیابی کن، وگرنه پیش فرض ضرب است
         let op = 'multiply';
         if(curr !== 'EUR' && curr !== 'GBP' && curr !== 'KWD' && curr !== 'USD' && curr !== 'USDT') {
-             // حدس میزنیم ارزهای دیگر معمولا نیاز به تقسیم دارند، اما دکمه قابل تغییر است
              op = 'divide'; 
         }
         if(curr === 'USD' || curr === 'USDT') op = 'multiply';
@@ -2511,7 +2543,7 @@ function renderAnalysis() {
             <td style="font-weight:bold">${curr}</td>
             <td dir="ltr" style="color:${cash >= 0 ? 'var(--text-main)' : 'var(--danger)'}">${cash.toLocaleString()}</td>
             <td dir="ltr" style="color:${custBal >= 0 ? 'var(--success)' : 'var(--danger)'}">${custBal.toLocaleString()}</td>
-            <td dir="ltr" style="color:${cityBal >= 0 ? 'var(--success)' : 'var(--danger)'}">${cityBal.toLocaleString()}</td>
+            <td dir="ltr" style="color:${cityBal >= 0 ? 'var(--danger)' : 'var(--success)'}">${cityBal.toLocaleString()}</td>
             <td dir="ltr" style="font-weight:900; background:rgba(212,175,55,0.05); color:${netCapital >= 0 ? 'var(--gold-primary)' : 'var(--danger)'}">${netCapital.toLocaleString()}</td>
             <td>
                 <div style="display:flex; align-items:center; gap:5px">
@@ -2531,12 +2563,9 @@ function renderAnalysis() {
         `;
         tbody.appendChild(tr);
         
-        // محاسبه اولیه
         setTimeout(() => calculateRowUSD(curr, netCapital), 100);
     });
 }
-
-// 2. تابع جدید برای تغییر حالت ضرب به تقسیم و برعکس
 function toggleAnalysisOp(btn, curr, netCapital) {
     const currentOp = btn.getAttribute('data-op');
     if(currentOp === 'multiply') {
