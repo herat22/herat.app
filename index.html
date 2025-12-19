@@ -189,7 +189,7 @@ html[dir="ltr"] .theme-switch { right: 20px; }
     ::-webkit-scrollbar { display: none; }
     #printHeaderGlobal { display: block !important; margin-bottom: 20px; }
 }
-/* --- شروع کدهای جدید منوی کشویی --- */
+
 .group-header {
     justify-content: space-between !important;
     background: rgba(0,0,0,0.2);
@@ -435,14 +435,17 @@ html[dir="ltr"] .submenu {
         </div>
 <div id="hawala" class="page">
             <div class="card">
-                <div class="grid-2" style="align-items:center">
-                    <h3 style="color:var(--gold-primary); font-weight:800" data-i18n="header_hawala_manage">مدیریت حواله‌جات</h3>
-                    <div style="text-align:left">
-                        <button class="btn btn-gold" onclick="openModal('modalNewHawala')" id="btnNewHawala">
-                            <span data-i18n="btn_new_hawala">➕ ثبت حواله جدید (F9)</span>
-                        </button>
-                    </div>
-                </div>
+               <div class="grid-2" style="align-items:center">
+    <h3 style="color:var(--gold-primary); font-weight:800" data-i18n="header_hawala_manage">مدیریت حواله‌جات</h3>
+    <div style="text-align:left; display:flex; gap:10px; justify-content:flex-end;">
+        <button class="btn btn-gold" onclick="openHawalaModal('Outgoing')" style="border-bottom: 3px solid #b8860b;">
+            <span>⬆️ حواله ارسالی (F9)</span>
+        </button>
+        <button class="btn btn-green" onclick="openHawalaModal('Incoming')" style="border-bottom: 3px solid #047857;">
+            <span>⬇️ حواله دریافتی (F8)</span>
+        </button>
+    </div>
+</div>
                 <div class="grid-4" style="margin-top:25px">
                     <div>
                         <label class="label" data-i18n="lbl_filter_city">فیلتر شهر</label>
@@ -938,19 +941,13 @@ html[dir="ltr"] .submenu {
 <div id="modalNewHawala" class="modal">
     <div class="modal-content" style="max-width:900px;">
         <span class="close-icon" onclick="closeModal('modalNewHawala')">&times;</span>
-        <div class="card-header" data-i18n="modal_new_hawala">ثبت حواله جدید (جامع)</div>
-        
-        <div class="grid-3">
+        <div class="card-header" id="modalHawalaTitle" style="border-bottom: 2px solid var(--gold-primary);">ثبت حواله جدید</div>
+        <input type="hidden" id="hType">
+
+        <div class="grid-2">
              <div class="radio-group" style="margin-bottom: 0;">
                 <div id="hOptExternal" class="radio-label active" onclick="setHawalaCustType('external')">نقدی (آزاد)</div>
                 <div id="hOptInternal" class="radio-label" onclick="setHawalaCustType('internal')">حساب‌دار</div>
-            </div>
-            <div>
-                <label class="label">نوع عملیات</label>
-                <select id="hType" class="input">
-                    <option value="Outgoing">ارسال (Sender)</option>
-                    <option value="Incoming">دریافت (Receiver)</option>
-                </select>
             </div>
             <div>
                 <label class="label">کتاب شهر</label>
@@ -958,7 +955,7 @@ html[dir="ltr"] .submenu {
             </div>
         </div>
 
-        <div id="hInternalSec" style="display:none; background:rgba(212,175,55,0.1); padding:10px; border-radius:8px; margin-bottom:15px;">
+        <div id="hInternalSec" style="display:none; background:rgba(212,175,55,0.1); padding:10px; border-radius:8px; margin-bottom:15px; margin-top:10px;">
             <label class="label">انتخاب مشتری حساب‌دار</label>
             <select id="hCustomerSelect" class="input" onchange="fillHawalaCustName()"></select>
         </div>
@@ -2253,7 +2250,7 @@ function toggleGroup(id) {
         submenu.classList.add('open');
     }
 }
-// --- پایان کد جدید ---
+
 function getPrintHeaderHTML() {
     if (!db.settings || db.settings.printHeader === false) return '';
     const title = db.settings.companyName || "صرافی هراتی‌ها";
@@ -2338,13 +2335,24 @@ function handleGlobalKeydown(e) {
     }
     if (e.key.startsWith('F')) {
         const key = e.key;
-        if(['F1','F2','F3','F4','F6','F9','F10'].includes(key)) e.preventDefault();
+        // اضافه شدن F8 به لیست کلیدهای ممنوعه مرورگر
+        if(['F1','F2','F3','F4','F6','F8','F9','F10'].includes(key)) e.preventDefault();
+        
         switch (key) {
             case 'F1': go('dashboard'); break;
             case 'F2': go('hawala'); break;
             case 'F3': go('accounts'); break;
             case 'F4': go('exchange'); break;
             case 'F6': go('ttPage'); break;
+            
+            // --- کد جدید برای کلید F8 (دریافت) ---
+            case 'F8': 
+                if(document.querySelector('.page.active').id === 'hawala') {
+                    openHawalaModal('Incoming');
+                }
+                break;
+            // ------------------------------------
+
             case 'F9': handleF9(); break; 
             case 'F10': handleF10(); break; 
         }
@@ -2354,7 +2362,11 @@ function handleGlobalKeydown(e) {
 function handleF9() {
     if (document.querySelector('.modal[style*="flex"]')) return;
     const activePage = document.querySelector('.page.active').id;
-    if (activePage === 'hawala') openModal('modalNewHawala');
+    
+    // تغییر این بخش:
+    if (activePage === 'hawala') {
+        openHawalaModal('Outgoing'); // پیش‌فرض F9 را روی ارسال می‌گذاریم
+    }
     else if (activePage === 'accounts') openModal('modalNewCust');
     else if (activePage === 'exchange') document.getElementById('fxBaseAmt').focus();
     else if (activePage === 'ttPage') document.getElementById('ttAmt').focus();
@@ -3812,7 +3824,7 @@ function printCryptoFx() {
 
 function exportDB() { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(db)], { type: "application/json" })); a.download = `Backup_${Date.now()}.json`; a.click(); }
 function importDB() { const i = document.createElement('input'); i.type = 'file'; i.onchange = e => { const r = new FileReader(); r.onload = async ev => { try { db = JSON.parse(ev.target.result); await dbAdapter.saveAll(db); location.reload(); } catch (x) { alert('File Error'); } }; r.readAsText(e.target.files[0]); }; i.click(); }
-// --- شروع کدهای اکسل ---
+
 
 // 1. خروجی اکسل برای لیست حواله‌ها
 function exportHawalaToExcel() { 
@@ -3897,11 +3909,9 @@ function exportLedgerToExcel() {
     
     const data = []; 
     
-    // هدر گزارش
     data.push({ 'تاریخ': `نام مشتری: ${c}`, 'شرح': `مانده نهایی حساب: ${balanceString}` }); 
     data.push({}); 
     
-    // ردیف‌های صورت‌حساب
     list.forEach(x => { 
         data.push({ 
             'تاریخ': new Date(x.date).toLocaleDateString('fa-IR'), 
@@ -3912,10 +3922,8 @@ function exportLedgerToExcel() {
         }); 
     });
     
-    // ساخت شیت اکسل
     const ws = XLSX.utils.json_to_sheet(data); 
     
-    // تنظیم عرض ستون‌ها برای زیبایی بیشتر
     const wscols = [
         {wch:15}, // عرض ستون تاریخ
         {wch:50}, // عرض ستون شرح
@@ -3928,10 +3936,9 @@ function exportLedgerToExcel() {
     const wb = XLSX.utils.book_new(); 
     XLSX.utils.book_append_sheet(wb, ws, "Ledger"); 
     
-    // دانلود فایل با نام مشتری
     XLSX.writeFile(wb, `صورتحساب_${c}.xlsx`);
 }
-// --- پایان کدهای اکسل ---
+
 async function setInitialCapital() { 
     if (currentUser.perms.admin) { 
         if (!db.avgRates) db.avgRates = {}; 
@@ -4285,9 +4292,8 @@ function renderCommissionCalc() {
         return;
     }
 
-    // حلقه روی شهرها
-    for (let city in cityData) {
-        // ساخت شناسه امن برای شهر (حذف فاصله و ...)
+       for (let city in cityData) {
+        
         const safeCityId = city.replace(/\s+/g, '_');
         
         htmlContent += `
@@ -4420,6 +4426,23 @@ function updateCommRow(key) {
     document.getElementById(`res_off_${key}`).innerText = vOff.toLocaleString(undefined, {maximumFractionDigits:1});
     document.getElementById(`res_ag_${key}`).innerText = vAg.toLocaleString(undefined, {maximumFractionDigits:1});
     document.getElementById(`res_tax_${key}`).innerText = vTax.toLocaleString(undefined, {maximumFractionDigits:1});
+}
+function openHawalaModal(type) {
+    const hiddenInput = document.getElementById('hType');
+    if(hiddenInput) hiddenInput.value = type;
+
+    const titleEl = document.getElementById('modalHawalaTitle');
+    if (type === 'Outgoing') {
+        titleEl.innerText = "ثبت حواله ارسالی (Outgoing)";
+        titleEl.style.color = "var(--gold-primary)";
+        titleEl.style.borderColor = "var(--gold-primary)";
+    } else {
+        titleEl.innerText = "ثبت حواله دریافتی (Incoming)";
+        titleEl.style.color = "#00e676";
+        titleEl.style.borderColor = "#00e676";
+    }
+    setHawalaCustType('external');
+    openModal('modalNewHawala');
 }
 </script>
 </body>
