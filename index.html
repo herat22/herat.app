@@ -4641,81 +4641,87 @@ window.openSettings = function() {
         if(db.settings.apiInterval) document.getElementById('setApiInterval').value = db.settings.apiInterval;
     }
 };
-// --- کد مخصوص دبی (پرسرعت و بدون فیلتر) ---
+// --- کد نهایی و پرسرعت (مخصوص دبی) ---
 async function fetchGlobalRates() {
     const lastUpdateEl = document.getElementById('lastUpdateRates');
     if(lastUpdateEl) {
-        lastUpdateEl.innerText = "در حال دریافت نرخ‌ها...";
+        lastUpdateEl.innerText = "در حال دریافت نرخ زنده...";
         lastUpdateEl.style.color = "var(--text-muted)";
     }
 
-    // 1. دریافت نرخ‌های فیات (ارزهای ملی) از سرور فرانکفورت (بسیار پایدار)
-    // این سرویس کاملاً رایگان و باز است
+    // بخش 1: دریافت نرخ طلا و کریپتو از بایننس (Binance)
+    // این دقیق‌ترین و سریع‌ترین منبع برای شما در دبی است
     try {
-        const fiatRes = await fetch('https://api.frankfurter.app/latest?from=USD');
-        if (!fiatRes.ok) throw new Error("Fiat Error");
-        const fiatData = await fiatRes.json();
+        // دریافت قیمت بیت‌کوین، اتریوم و طلا (PAXG معادل انس طلا است)
+        const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbols=["BTCUSDT","ETHUSDT","PAXGUSDT"]');
+        if (!res.ok) throw new Error("Binance Error");
         
-        // تبدیل فرمت فرانکفورت به فرمت برنامه شما
-        // این API نرخ‌ها را برعکس می‌دهد (USD به بقیه)، پس ما معکوس می‌کنیم
-        const rates = {};
-        const targets = ['EUR', 'GBP', 'AUD', 'CAD', 'CHF', 'SEK', 'CNY', 'JPY', 'TRY'];
+        const data = await res.json();
         
-        targets.forEach(sym => {
-            if(fiatData.rates[sym]) {
-                rates[sym] = fiatData.rates[sym]; // این یعنی 1 دلار چند یورو است
-            }
-        });
-        
-        // اضافه کردن درهم امارات (AED) و ریال (SAR) به صورت دستی چون در فرانکفورت نیستند
-        // یا دریافت از یک منبع دیگر. فعلا ثابت یا تقریبی برای نمایش (چون این API فقط ارزهای اصلی اروپایی/جهانی را دارد)
-        rates['AED'] = 3.67; // نرخ ثابت درهم
-        rates['SAR'] = 3.75; // نرخ ثابت ریال
-        
-        renderFiatRates(rates);
+        // پیدا کردن قیمت‌ها از لیست دریافتی
+        const btcObj = data.find(x => x.symbol === 'BTCUSDT');
+        const ethObj = data.find(x => x.symbol === 'ETHUSDT');
+        const goldObj = data.find(x => x.symbol === 'PAXGUSDT');
 
-    } catch (error) {
-        console.error("Fiat API Error:", error);
-        const box = document.getElementById('fiatRatesBox');
-        if(box) box.innerHTML = `<div class="stat-box" style="color:red">خطا در دریافت ارزها</div>`;
-    }
+        const btcPrice = btcObj ? parseFloat(btcObj.price) : 0;
+        const ethPrice = ethObj ? parseFloat(ethObj.price) : 0;
+        const goldPrice = goldObj ? parseFloat(goldObj.price) : 0;
 
-    // 2. دریافت نرخ‌های کریپتو و طلا از CryptoCompare (بسیار سریع در دبی)
-    // این API برای استفاده مستقیم در فرانت‌اند ساخته شده و مشکل CORS ندارد
-    const cryptoUrl = 'https://min-api.cryptocompare.com/data/pricemulti?fsyms=BTC,ETH,PAXG,USDT&tsyms=USD';
-
-    try {
-        const cryptoRes = await fetch(cryptoUrl);
-        if (!cryptoRes.ok) throw new Error("Crypto Network Error");
-        
-        const data = await cryptoRes.json();
-        
-        // استخراج قیمت‌ها
-        // PAXG توکن طلای دیجیتال است که دقیقاً قیمت انس جهانی طلا را دارد
-        const btcPrice = data.BTC ? data.BTC.USD : 0;
-        const ethPrice = data.ETH ? data.ETH.USD : 0;
-        const goldPrice = data.PAXG ? data.PAXG.USD : 0;
-
-        // نمایش در بخش کریپتو
+        // نمایش در باکس‌ها
         renderCryptoRates({
             bitcoin: { usd: btcPrice },
             ethereum: { usd: ethPrice }
         });
 
-        // نمایش در بخش طلا
         renderCommodities(goldPrice);
 
-        // بروزرسانی زمان موفقیت
+    } catch (error) {
+        console.error("Binance API Error:", error);
+        const cBox = document.getElementById('cryptoRatesBox');
+        const gBox = document.getElementById('commoRatesBox');
+        if(cBox) cBox.innerHTML = `<div class="stat-box" style="color:red">خطا در اتصال</div>`;
+        if(gBox) gBox.innerHTML = `<div class="stat-box" style="color:red">خطا در اتصال</div>`;
+    }
+
+    // بخش 2: دریافت ارزهای ملی (فیات) از ExchangeRate-API
+    // این API بسیار سبک و سریع است
+    try {
+        const fiatRes = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+        if (!fiatRes.ok) throw new Error("Fiat Error");
+        
+        const fiatData = await fiatRes.json();
+        const r = fiatData.rates;
+        
+        // لیست ارزهایی که نیاز دارید
+        const targetRates = {
+            'EUR': r.EUR,
+            'GBP': r.GBP,
+            'AUD': r.AUD,
+            'CAD': r.CAD,
+            'CHF': r.CHF,
+            'SEK': r.SEK,
+            'CNY': r.CNY,
+            'JPY': r.JPY,
+            'TRY': r.TRY,
+            'AED': r.AED, // درهم امارات
+            'SAR': r.SAR, // ریال سعودی
+            'AFN': r.AFN, // افغانی
+            'IRR': r.IRR  // ریال ایران
+        };
+
+        renderFiatRates(targetRates);
+
+        // اگر همه چیز درست بود، ساعت را آپدیت کن
         if(lastUpdateEl) {
-            const time = new Date().toLocaleTimeString('en-US'); // زمان به وقت سیستم (دبی)
-            lastUpdateEl.innerText = `Updated: ${time}`;
+            const time = new Date().toLocaleTimeString('en-US');
+            lastUpdateEl.innerText = `Live Update: ${time}`;
             lastUpdateEl.style.color = "var(--success)";
         }
 
     } catch (error) {
-        console.error("Crypto API Error:", error);
-        const cBox = document.getElementById('cryptoRatesBox');
-        if(cBox) cBox.innerHTML = `<div class="stat-box" style="color:orange">عدم دریافت نرخ</div>`;
+        console.error("Fiat API Error:", error);
+        const box = document.getElementById('fiatRatesBox');
+        if(box) box.innerHTML = `<div class="stat-box" style="color:red">خطا در دریافت ارزها</div>`;
     }
 } 
 
