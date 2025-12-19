@@ -541,6 +541,14 @@ html[dir="ltr"] .submenu {
                             <option value="Done" data-i18n="opt_done">اجرا/تسویه شده</option>
                         </select>
                     </div>
+<div id="divFilterGroup" style="display:none;">
+    <label class="label" style="color:#ff5252">فیلتر محرمانه</label>
+    <select id="filterHGroup" class="input" onchange="filterHawala()">
+        <option value="All">نمایش همه (A + B)</option>
+        <option value="A">فقط گروه A</option>
+        <option value="B">فقط گروه B</option>
+    </select>
+</div>
                     <div style="padding-top:25px; display:flex; gap:10px">
                         <button class="btn btn-outline" style="font-size:12px; flex:1" onclick="exportHawalaToExcel()">
                             <span data-i18n="btn_excel">📊 اکسل عالی</span>
@@ -1019,6 +1027,13 @@ html[dir="ltr"] .submenu {
         <input type="hidden" id="hType">
 
         <div class="grid-2">
+<div id="divHGroup" style="display:none; margin-bottom:10px; background:rgba(255,0,0,0.1); padding:8px; border-radius:8px; border:1px dashed #ff5252;">
+    <label class="label" style="color:#ff5252; font-weight:bold;">سطح محرمانگی (Data Level)</label>
+    <select id="hGroup" class="input" style="border-color:#ff5252;">
+        <option value="A">گروه الف (A) - عمومی</option>
+        <option value="B">گروه ب (B) - محرمانه</option>
+    </select>
+</div>
              <div class="radio-group" style="margin-bottom: 0;">
                 <div id="hOptExternal" class="radio-label active" onclick="setHawalaCustType('external')">نقدی (آزاد)</div>
                 <div id="hOptInternal" class="radio-label" onclick="setHawalaCustType('internal')">حساب‌دار</div>
@@ -1443,6 +1458,7 @@ html[dir="ltr"] .submenu {
                             <label><input type="checkbox" id="perm_accounts"> حساب‌ها</label>
                             <label><input type="checkbox" id="perm_tt"> TT</label>
                             <label><input type="checkbox" id="perm_admin" onchange="toggleAdminAccess(this)"> <span style="color:var(--gold-primary); font-weight:bold">مدیر کل</span></label>
+<label><input type="checkbox" id="perm_group_b"> <span style="color:#ff5252; font-weight:bold;">دسترسی به گروه B</span></label>
                         </div>
                         <button class="btn btn-green" style="width:100%" onclick="addUser()">افزودن کاربر جدید</button>
                         
@@ -2370,14 +2386,29 @@ async function loadDB() {
     try {
         await dbAdapter.init();
         const savedData = await dbAdapter.loadAll();
-        if (savedData.users && savedData.users.length > 0) { db = Object.assign(db, savedData); } 
-        else { const s = generateSalt(); db.users = [{ u: 'admin', salt: s, hash: hashPassword('123456', s), perms: { hawala: true, exchange: true, accounts: true, tt: true, admin: true } }]; }
+        if (savedData.users && savedData.users.length > 0) { 
+            db = Object.assign(db, savedData); 
+        } else { 
+            const s = generateSalt(); 
+            // ادمین پیش‌فرض دسترسی کامل دارد
+            db.users = [{ 
+                u: 'admin', 
+                salt: s, 
+                hash: hashPassword('123456', s), 
+                perms: { hawala: true, exchange: true, accounts: true, tt: true, admin: true, access_group_b: true } 
+            }]; 
+        }
         fxProfit = db.fxProfit || {};
         if (!db.settings) db.settings = { printHeader: false };
-if (!db.avgRates) db.avgRates = {};
-        db.currencies.forEach(c => { if (db.cashBox[c] === undefined) db.cashBox[c] = 0; if (db.initialCapital[c] === undefined) db.initialCapital[c] = 0; });
+        if (!db.avgRates) db.avgRates = {};
+        db.currencies.forEach(c => { 
+            if (db.cashBox[c] === undefined) db.cashBox[c] = 0; 
+            if (db.initialCapital[c] === undefined) db.initialCapital[c] = 0; 
+        });
         db.cityHawalaCounters = db.cityHawalaCounters || {};
-        db.cities.forEach(city => { if (!db.cityHawalaCounters[city.code]) { db.cityHawalaCounters[city.code] = { Outgoing: 1001, Incoming: 1001 }; } });
+        db.cities.forEach(city => { 
+            if (!db.cityHawalaCounters[city.code]) { db.cityHawalaCounters[city.code] = { Outgoing: 1001, Incoming: 1001 }; } 
+        });
         await dbAdapter.saveAll(db);
     } catch (e) { console.error("DB Load Error", e); alert("خطا در بارگذاری پایگاه داده"); }
 }
@@ -2529,6 +2560,11 @@ function applyPermissions() {
         }
     }
     if (isFullAdmin) renderUserManagement();
+
+    // مخفی کردن فیلتر برای کاربران عادی
+    const hasGroupAccess = currentUser.perms.access_group_b || currentUser.perms.admin;
+    const filterDiv = document.getElementById('divFilterGroup');
+    if(filterDiv) filterDiv.style.display = hasGroupAccess ? 'block' : 'none';
 }
 
 function updateUI() {
@@ -2716,27 +2752,24 @@ function updateGrandTotal() {
     document.getElementById('grandTotalUSD').innerText = total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + " $";
 }
 function renderDashboard() { 
-    // --- محاسبه سود کل (مثل قبل) ---
+    const hasAccess = currentUser.perms.access_group_b || currentUser.perms.admin;
+
     let totalProfit = {}; 
     for (const c in fxProfit) { 
         if (fxProfit[c] !== 0) totalProfit[c] = (totalProfit[c] || 0) + fxProfit[c]; 
     }
 
-    // --- محاسبه سود امروز (بخش جدید) ---
     let dailyProfit = {};
     const startOfDay = new Date();
-    startOfDay.setHours(0,0,0,0); // تنظیم ساعت روی 12 شب
+    startOfDay.setHours(0,0,0,0); 
     const startTime = startOfDay.getTime();
 
-    // بررسی دفتر روزنامه برای پیدا کردن سودهای امروز
     db.journal.forEach(log => {
         if (log.time >= startTime) {
-            // اگر معامله ارزی (EXCHANGE) بود
             if (log.type === 'EXCHANGE' && log.data && log.data.profit) {
-                const curr = log.data.quoteCurr; // سود معمولا به ارز دوم (مثل افغانی) است
+                const curr = log.data.quoteCurr; 
                 if(curr) dailyProfit[curr] = (dailyProfit[curr] || 0) + log.data.profit;
             }
-            // اگر معامله کریپتو (CRYPTO) بود
             if (log.type === 'CRYPTO' && log.data && log.data.profit) {
                 const curr = log.data.curr; 
                 if(curr) dailyProfit[curr] = (dailyProfit[curr] || 0) + log.data.profit;
@@ -2744,14 +2777,12 @@ function renderDashboard() {
         }
     });
 
-    // --- نمایش سرمایه اولیه ---
     let initHtml = ''; 
     db.currencies.forEach(c => { 
         if (db.initialCapital[c] > 0) initHtml += `<span style="margin-left:10px">${db.initialCapital[c].toLocaleString()} ${c}</span>`; 
     });
     document.getElementById('dispInitialCap').innerHTML = initHtml || `<span style="opacity:0.6">-</span>`;
 
-    // --- نمایش سود کل ---
     let profitHtml = ''; 
     for (const c in totalProfit) { 
         const val = totalProfit[c]; 
@@ -2762,18 +2793,16 @@ function renderDashboard() {
     }
     document.getElementById('dispProfit').innerHTML = profitHtml || `0`;
 
-    // --- نمایش سود امروز (جدید) ---
     let dailyHtml = '';
     for (const c in dailyProfit) {
         const val = dailyProfit[c];
         if (Math.abs(val) > 0.001) {
-            const color = val >= 0 ? '#4caf50' : '#f44336'; // سبز روشن یا قرمز
+            const color = val >= 0 ? '#4caf50' : '#f44336'; 
             dailyHtml += `<div style="color:${color}; direction:ltr">${val >= 0 ? '+' : ''}${val.toLocaleString()} ${c}</div>`;
         }
     }
     document.getElementById('dispDailyProfit').innerHTML = dailyHtml || `<span style="opacity:0.5; font-size:14px">بدون سود</span>`;
 
-    // --- بقیه کدهای داشبورد (نمایش صندوق و ...) ---
     const cashStatsDiv = document.getElementById('cashStats'); 
     const cryptoStatsDiv = document.getElementById('cryptoStats');
     cashStatsDiv.innerHTML = ''; 
@@ -2790,18 +2819,22 @@ function renderDashboard() {
     cityStatsDiv.innerHTML = '';
     const cityBalances = {}; 
     const totalCommissions = {};
+    
     db.hawalas.forEach(h => { 
+        // ***** فیلتر محرمانه *****
+        if (!hasAccess && h.dataGroup === 'B') return;
+
         if (!cityBalances[h.cityBook]) cityBalances[h.cityBook] = {}; 
         if (!cityBalances[h.cityBook][h.curr]) cityBalances[h.cityBook][h.curr] = 0; 
         if (h.type === 'Outgoing') cityBalances[h.cityBook][h.curr] += h.amt; 
         else if (h.type === 'Incoming') cityBalances[h.cityBook][h.curr] -= h.amt; 
         if (h.comm && h.comm > 0) { 
-            // اصلاح: استفاده از ارز خود کمیشن، نه ارز حواله
             const cC = h.commCurr || h.curr; 
             if (!totalCommissions[cC]) totalCommissions[cC] = 0; 
             totalCommissions[cC] += h.comm; 
         }
     });
+    
     db.cities.forEach(city => {
         let balanceHtml = ''; 
         const cityBal = cityBalances[city.code];
@@ -3061,13 +3094,13 @@ function fillHawalaCustName() {
         document.getElementById('hSender').value = sel.value; 
     }
 }
+
 async function submitHawala() {
     const hType = document.getElementById('hType').value; 
     const hCityBook = document.getElementById('hCityBook').value; 
     const hAmt = parseFloat(document.getElementById('hAmt').value); 
     const hCurr = document.getElementById('hCurr').value; 
     
-    // فرستنده
     const hSender = document.getElementById('hSender').value.trim(); 
     const hSenderLast = document.getElementById('hSenderLast').value.trim(); 
     const hSenderFather = document.getElementById('hSenderFather').value.trim(); 
@@ -3076,7 +3109,6 @@ async function submitHawala() {
     const hSenderSource = document.getElementById('hSenderSource').value.trim(); 
     const hSenderPurpose = document.getElementById('hSenderPurpose').value.trim(); 
 
-    // گیرنده
     const hReceiver = document.getElementById('hReceiver').value.trim();
     const hReceiverLast = document.getElementById('hReceiverLast').value.trim();
     const hReceiverFather = document.getElementById('hReceiverFather').value.trim();
@@ -3092,6 +3124,12 @@ async function submitHawala() {
 
     if (!hCityBook || hAmt <= 0 || !hSender || !hReceiver) { alert("اطلاعات ناقص است"); return; }
     
+    // تعیین گروه دیتا (A یا B)
+    let dataGroup = 'A'; 
+    if (currentUser.perms.access_group_b || currentUser.perms.admin) {
+        dataGroup = document.getElementById('hGroup').value;
+    }
+
     const isInternal = (hawalaCustType === 'internal');
     const custName = document.getElementById('hCustomerSelect').value;
     if (isInternal && !custName) { alert("مشتری را انتخاب کنید"); return; }
@@ -3112,7 +3150,8 @@ async function submitHawala() {
         execDate: hType === 'Outgoing' ? Date.now() : 0, 
         status: hType === 'Outgoing' ? 'Done' : 'Pending',
         isInternal: isInternal,
-        internalCust: isInternal ? custName : null
+        internalCust: isInternal ? custName : null,
+        dataGroup: dataGroup // ذخیره گروه
     };
 
     let logData = { hawalaId: uniqueId, isInternal: isInternal };
@@ -3133,9 +3172,8 @@ async function submitHawala() {
     db.hawalas.push(newHawala); 
     await saveDB(); 
     closeModal('modalNewHawala'); filterHawala(); renderDashboard(); 
-    alert(`حواله ${displayNum} ثبت شد.`);
+    alert(`حواله ${displayNum} (گروه ${dataGroup}) ثبت شد.`);
 }
-
 async function execHawala(id) {
     if (!currentUser.perms.admin && !currentUser.perms.hawala) return;
     const h = db.hawalas.find(x => x.id === id); if (!h || h.status !== 'Pending') return;
@@ -3182,17 +3220,40 @@ async function deleteHawala(id) {
     await saveDB(); filterHawala(); renderDashboard();
 }
 function filterHawala() {
-    const list = db.hawalas.filter(h => (document.getElementById('filterHCity').value === 'All' || h.cityBook === document.getElementById('filterHCity').value) && (document.getElementById('filterHType').value === 'All' || h.type === document.getElementById('filterHType').value) && (document.getElementById('filterHStatus').value === 'All' || h.status === document.getElementById('filterHStatus').value))
-    .sort((a, b) => b.regDate - a.regDate);
+    const hasAccess = currentUser.perms.access_group_b || currentUser.perms.admin;
+    const filterCity = document.getElementById('filterHCity').value;
+    const filterType = document.getElementById('filterHType').value;
+    const filterStatus = document.getElementById('filterHStatus').value;
+    const filterGroup = hasAccess ? document.getElementById('filterHGroup').value : 'A';
+
+    const list = db.hawalas.filter(h => {
+        // ۱. اگر دسترسی ندارد، رکوردهای B را کلاً نشان نده
+        if (!hasAccess && h.dataGroup === 'B') return false;
+
+        // ۲. اگر فیلتر گروه انتخاب شده، اعمال کن
+        if (hasAccess && filterGroup !== 'All') {
+            const g = h.dataGroup || 'A';
+            if (g !== filterGroup) return false;
+        }
+
+        return (filterCity === 'All' || h.cityBook === filterCity) && 
+               (filterType === 'All' || h.type === filterType) && 
+               (filterStatus === 'All' || h.status === filterStatus);
+    }).sort((a, b) => b.regDate - a.regDate);
+
     const t = TRANSLATIONS[currentLang];
     document.getElementById('hawalaBody').innerHTML = list.map(h => {
+        // نمایش برچسب B فقط برای مدیران
+        const groupLabel = (hasAccess && h.dataGroup === 'B') ? '<b style="color:red; font-size:10px;">(B)</b> ' : '';
+        
         let opBtns = `<button class="btn btn-outline no-print" style="padding:5px 8px; font-size:12px; margin-left:5px" onclick="printH('${h.id}')">🖨</button>`;
         if (h.status === 'Pending' && h.type === 'Incoming') opBtns += `<button class="btn btn-green no-print" style="padding:5px" onclick="execHawala('${h.id}')">✅</button>`; 
         if (currentUser.perms.admin) { opBtns += ` <button class="btn btn-outline" style="padding:5px" onclick="openEditHawalaModal('${h.id}')">✏️</button>`; opBtns += ` <button class="btn btn-red no-print" style="padding:5px" onclick="deleteHawala('${h.id}')">🗑</button>`; }
         const commDisp = h.comm ? h.comm.toLocaleString() : '0';
         const typeLabel = h.type === 'Outgoing' ? `<span class="badge" style="background:#fff3cd; color:#856404">${t.opt_outgoing || 'Out'}</span>` : `<span class="badge" style="background:#d4edda; color:#155724">${t.opt_incoming || 'In'}</span>`;
         const statusLabel = h.status === 'Done' ? (t.opt_done || 'Done') : (t.opt_pending || 'Pending');
-        return `<tr><td style="font-weight:900; direction:ltr">${h.displayId || h.id}</td><td>${typeLabel}</td><td>${h.cityBook}</td><td dir="ltr" style="font-weight:bold">${h.amt.toLocaleString()} ${h.curr}</td><td dir="ltr" style="color:var(--text-muted); font-weight:bold">${commDisp}</td><td>${new Date(h.regDate).toLocaleDateString(currentLang === 'fa' ? 'fa-IR' : 'en-US')}</td><td>${h.execDate ? new Date(h.execDate).toLocaleDateString(currentLang === 'fa' ? 'fa-IR' : 'en-US') : '-'}</td><td>${statusLabel}</td><td>${opBtns}</td></tr>`;
+        
+        return `<tr><td style="font-weight:900; direction:ltr">${groupLabel}${h.displayId || h.id}</td><td>${typeLabel}</td><td>${h.cityBook}</td><td dir="ltr" style="font-weight:bold">${h.amt.toLocaleString()} ${h.curr}</td><td dir="ltr" style="color:var(--text-muted); font-weight:bold">${commDisp}</td><td>${new Date(h.regDate).toLocaleDateString(currentLang === 'fa' ? 'fa-IR' : 'en-US')}</td><td>${h.execDate ? new Date(h.execDate).toLocaleDateString(currentLang === 'fa' ? 'fa-IR' : 'en-US') : '-'}</td><td>${statusLabel}</td><td>${opBtns}</td></tr>`;
     }).join('');
 }
 
@@ -4096,7 +4157,30 @@ async function setInitialCapital() {
     } 
 }
 async function changeMyPass() { const p = document.getElementById('myNewPass').value; if (p.length < 4) return; const u = db.users.find(x => x.u === currentUser.u); u.salt = generateSalt(); u.hash = hashPassword(p, u.salt); await saveDB(); alert('Password Changed.'); }
-async function addUser() { const u = document.getElementById('newUName').value, p = document.getElementById('newUPass').value; if (u && p) { const s = generateSalt(); db.users.push({ u, salt: s, hash: hashPassword(p, s), perms: { hawala: document.getElementById('perm_hawala').checked, exchange: document.getElementById('perm_exchange').checked, accounts: document.getElementById('perm_accounts').checked, tt: document.getElementById('perm_tt').checked, admin: document.getElementById('perm_admin').checked } }); await saveDB(); renderUserManagement(); alert("User Added."); } }
+async function addUser() { 
+    const u = document.getElementById('newUName').value;
+    const p = document.getElementById('newUPass').value; 
+    if (u && p) { 
+        const s = generateSalt(); 
+        db.users.push({ 
+            u, 
+            salt: s, 
+            hash: hashPassword(p, s), 
+            perms: { 
+                hawala: document.getElementById('perm_hawala').checked, 
+                exchange: document.getElementById('perm_exchange').checked, 
+                accounts: document.getElementById('perm_accounts').checked, 
+                tt: document.getElementById('perm_tt').checked, 
+                admin: document.getElementById('perm_admin').checked,
+                access_group_b: document.getElementById('perm_group_b').checked // دسترسی جدید
+            } 
+        }); 
+        await saveDB(); 
+        renderUserManagement(); 
+        alert("کاربر جدید اضافه شد."); 
+    } 
+}
+
 function renderUserManagement() { document.getElementById('userListManage').innerHTML = db.users.map(u => `<div>${u.u} <button onclick="delUser('${u.u}')" class="btn btn-red" style="padding:2px 5px; font-size:10px">Delete</button></div>`).join(''); }
 async function delUser(u) { if (u !== 'admin' && confirm('Delete?')) { db.users = db.users.filter(x => x.u !== u); await saveDB(); renderUserManagement(); alert("Deleted."); } }
 async function addCity() { 
@@ -4570,6 +4654,7 @@ function updateCommRow(key) {
     document.getElementById(`res_ag_${key}`).innerText = vAg.toLocaleString(undefined, {maximumFractionDigits:1});
     document.getElementById(`res_tax_${key}`).innerText = vTax.toLocaleString(undefined, {maximumFractionDigits:1});
 }
+
 function openHawalaModal(type) {
     const hiddenInput = document.getElementById('hType');
     if(hiddenInput) hiddenInput.value = type;
@@ -4584,37 +4669,18 @@ function openHawalaModal(type) {
         titleEl.style.color = "#00e676";
         titleEl.style.borderColor = "#00e676";
     }
+
+    // منطق مخفی‌سازی منوی انتخاب گروه
+    const hasGroupAccess = currentUser.perms.access_group_b || currentUser.perms.admin;
+    const groupDiv = document.getElementById('divHGroup');
+    if(groupDiv) {
+        groupDiv.style.display = hasGroupAccess ? 'block' : 'none';
+        document.getElementById('hGroup').value = 'A'; // همیشه پیش‌فرض روی A باشد
+    }
+
     setHawalaCustType('external');
     openModal('modalNewHawala');
 }
-// --- شروع کدهای هوشمند نرخ جهانی (نسخه قابل تنظیم) --- //
-
-let globalRateInterval = null;
-let previousRates = {};
-
-// 1. هوشمندسازی دکمه منو (بدون تغییر دستی)
-const originalGoFunc = window.go;
-window.go = function(pageId) {
-    originalGoFunc(pageId); 
-    if (pageId === 'globalRates') {
-        // خواندن زمان اینتروال از تنظیمات (پیش‌فرض 30 ثانیه)
-        let intervalTime = 30000;
-        if(db.settings && db.settings.apiInterval) {
-            intervalTime = parseInt(db.settings.apiInterval) * 1000;
-        }
-
-        fetchGlobalRates();
-        if (!globalRateInterval) {
-            globalRateInterval = setInterval(fetchGlobalRates, intervalTime);
-        }
-    } else {
-        if (globalRateInterval) {
-            clearInterval(globalRateInterval);
-            globalRateInterval = null;
-        }
-    }
-};
-
 // 2. تابع ذخیره تنظیمات API
 async function saveAPISettings() {
     if (!db.settings) db.settings = {};
