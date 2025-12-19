@@ -3825,25 +3825,28 @@ function printCryptoFx() {
 function exportDB() { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(db)], { type: "application/json" })); a.download = `Backup_${Date.now()}.json`; a.click(); }
 function importDB() { const i = document.createElement('input'); i.type = 'file'; i.onchange = e => { const r = new FileReader(); r.onload = async ev => { try { db = JSON.parse(ev.target.result); await dbAdapter.saveAll(db); location.reload(); } catch (x) { alert('File Error'); } }; r.readAsText(e.target.files[0]); }; i.click(); }
 
-
-// 1. خروجی اکسل برای لیست حواله‌ها
 function exportHawalaToExcel() { 
-    // گرفتن فیلترهای اعمال شده توسط کاربر
+    // 1. گرفتن فیلترهای اعمال شده
     const filterCity = document.getElementById('filterHCity').value; 
     const filterType = document.getElementById('filterHType').value; 
     const filterStatus = document.getElementById('filterHStatus').value;
     
-    // فیلتر کردن داده‌ها بر اساس انتخاب کاربر
+    // 2. فیلتر کردن داده‌ها
     const filteredHawalas = db.hawalas.filter(h => 
         (filterCity === 'All' || h.cityBook === filterCity) && 
         (filterType === 'All' || h.type === filterType) && 
         (filterStatus === 'All' || h.status === filterStatus)
-    ).sort((a, b) => b.regDate - a.regDate); // مرتب‌سازی بر اساس تاریخ (جدید به قدیم)
+    ).sort((a, b) => b.regDate - a.regDate); // مرتب‌سازی: جدیدترین بالا
     
+    if (filteredHawalas.length === 0) {
+        alert("هیچ داده‌ای برای خروجی وجود ندارد.");
+        return;
+    }
+
     const data = []; 
     
-    // بخش اول: محاسبه مجموع مبالغ برای هر ارز
-    data.push({ 'نمبر_حواله': '--- خلاصه موجودی ارزها در این لیست ---' });
+    // --- بخش خلاصه (جمع مبالغ) در بالای اکسل ---
+    data.push({ 'شماره_حواله': '--- گزارش مجموع ارزها ---' });
     
     let currencyTotals = {}; 
     filteredHawalas.forEach(h => { 
@@ -3852,40 +3855,79 @@ function exportHawalaToExcel() {
     }); 
     
     for(let c in currencyTotals) { 
-        data.push({ 'نمبر_حواله': c, 'مبلغ': currencyTotals[c] }); 
+        data.push({ 
+            'شماره_حواله': `مجموع ${c}`, 
+            'مبلغ': currencyTotals[c] 
+        }); 
     } 
     
-    // ایجاد فاصله در اکسل
+    // فاصله انداختن در اکسل
     data.push({}); 
     data.push({});
     
-    // بخش دوم: لیست کامل حواله‌ها
+    // --- بخش اصلی: لیست کامل با تمام جزئیات ---
     filteredHawalas.forEach(h => { 
+        // پیدا کردن نام شهر
+        const cityName = db.cities.find(c => c.code === h.cityBook)?.name || h.cityBook;
+
         data.push({ 
-            'نمبر_حواله': h.displayId || h.id, 
-            'نوع': h.type === 'Outgoing' ? 'صادره (ارسال)' : 'وارده (دریافت)', 
-            'شهر_کتاب': db.cities.find(c => c.code === h.cityBook)?.name || h.cityBook, 
+            'شماره_حواله': h.displayId || h.id, 
+            'نوع': h.type === 'Outgoing' ? 'ارسالی' : 'دریافتی', 
+            'شهر/کتاب': cityName, 
             'مبلغ': h.amt, 
-            'کمیشن': h.comm || 0, 
             'ارز': h.curr, 
-            'فرستنده': h.sender, 
-            'گیرنده': h.receiver, 
-            'تلفن': h.phone, 
+            'کمیشن': h.comm || 0,
+            
+            // --- جزئیات کامل فرستنده ---
+            'نام_فرستنده': `${h.sender} ${h.senderLast || ''}`.trim(),
+            'ولد_فرستنده': h.senderFather || '',
+            'تلفن_فرستنده': h.senderPhone || '',
+            'تذکره_فرستنده': h.senderID || '',
+
+            // --- جزئیات کامل گیرنده ---
+            'نام_گیرنده': `${h.receiver} ${h.receiverLast || ''}`.trim(),
+            'ولد_گیرنده': h.receiverFather || '',
+            'تلفن_گیرنده': h.receiverPhone || '',
+            'تذکره_گیرنده': h.receiverID || '',
+
+            // --- سایر اطلاعات ---
+            'توضیحات/بابت': h.receiverPurpose || h.senderPurpose || '',
             'تاریخ_ثبت': new Date(h.regDate).toLocaleDateString('fa-IR'), 
+            'تاریخ_اجرا': h.execDate ? new Date(h.execDate).toLocaleDateString('fa-IR') : '-',
             'وضعیت': h.status === 'Done' ? 'اجرا شده' : 'در انتظار' 
         }); 
     });
     
-    // تبدیل داده‌ها به شیت اکسل
+    // ساخت شیت اکسل
     const ws = XLSX.utils.json_to_sheet(data); 
+    
+    // تنظیم عرض ستون‌ها (برای زیبایی فایل اکسل)
+    const wscols = [
+        {wch: 15}, // شماره
+        {wch: 10}, // نوع
+        {wch: 15}, // شهر
+        {wch: 12}, // مبلغ
+        {wch: 8},  // ارز
+        {wch: 10}, // کمیشن
+        {wch: 20}, // نام فرستنده
+        {wch: 15}, // ولد فرستنده
+        {wch: 15}, // تلفن فرستنده
+        {wch: 15}, // تذکره فرستنده
+        {wch: 20}, // نام گیرنده
+        {wch: 15}, // ولد گیرنده
+        {wch: 15}, // تلفن گیرنده
+        {wch: 15}, // تذکره گیرنده
+        {wch: 25}, // توضیحات
+        {wch: 12}, // تاریخ
+    ];
+    ws['!cols'] = wscols;
+
     const wb = XLSX.utils.book_new(); 
     XLSX.utils.book_append_sheet(wb, ws, "لیست حوالجات"); 
     
-    // دانلود فایل
-    XLSX.writeFile(wb, `Hawala_List_${new Date().toLocaleDateString('fa-IR').replace(/\//g, '-')}.xlsx`);
+    // دانلود فایل با تاریخ امروز
+    XLSX.writeFile(wb, `Hawala_Full_${new Date().toLocaleDateString('fa-IR').replace(/\//g, '-')}.xlsx`);
 }
-
-// 2. خروجی اکسل برای صورت‌حساب مشتری (Ledger)
 function exportLedgerToExcel() {
     const c = document.getElementById('selCustomer').value; 
     if(!c) {
