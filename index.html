@@ -1542,6 +1542,39 @@ html[dir="ltr"] .submenu {
         </div>
     </div>
 </div>
+<div id="modalEmpLedger" class="modal">
+    <div class="modal-content" style="max-width:800px; height:90vh; display:flex; flex-direction:column;">
+        <span class="close-icon" onclick="closeModal('modalEmpLedger')">&times;</span>
+        <div class="card-header">
+            <span>صورت‌حساب کارمند: </span>
+            <span id="ledgerEmpName" style="color:var(--gold-primary)"></span>
+        </div>
+        <div style="background:rgba(212,175,55,0.1); padding:10px; border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+            <span>مانده قابل پرداخت:</span>
+            <span id="ledgerEmpBalance" style="font-size:18px; font-weight:900; direction:ltr">0</span>
+        </div>
+        
+        <div class="table-container" style="flex:1; overflow-y:auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>تاریخ</th>
+                        <th>شرح</th>
+                        <th>برداشت (بدهکار)</th>
+                        <th>حقوق (بستانکار)</th>
+                        <th>مانده</th>
+                        <th>حذف</th>
+                    </tr>
+                </thead>
+                <tbody id="empLedgerBody"></tbody>
+            </table>
+        </div>
+        <div style="margin-top:10px; text-align:left">
+            <button class="btn btn-outline" onclick="printEmpLedger()">🖨 چاپ صورت‌حساب</button>
+            <button class="btn btn-red" onclick="closeModal('modalEmpLedger')">بستن</button>
+        </div>
+    </div>
+</div>
 <script>
 function numberToPersianWords(number) {
     const units = ['', 'یک', 'دو', 'سه', 'چهار', 'پنج', 'شش', 'هفت', 'هشت', 'نه'];
@@ -2413,7 +2446,6 @@ async function loadDB() {
             db = Object.assign(db, savedData); 
         } else { 
             const s = generateSalt(); 
-            // ادمین پیش‌فرض دسترسی کامل دارد
             db.users = [{ 
                 u: 'admin', 
                 salt: s, 
@@ -2421,18 +2453,32 @@ async function loadDB() {
                 perms: { hawala: true, exchange: true, accounts: true, tt: true, admin: true, access_group_b: true } 
             }]; 
         }
+
+        // === خط مهم جدید: ایجاد دفتر حساب کارمندان ===
+        if (!db.employeeLedger) db.employeeLedger = {};
+        // ===========================================
+
         fxProfit = db.fxProfit || {};
         if (!db.settings) db.settings = { printHeader: false };
         if (!db.avgRates) db.avgRates = {};
+        
         db.currencies.forEach(c => { 
             if (db.cashBox[c] === undefined) db.cashBox[c] = 0; 
             if (db.initialCapital[c] === undefined) db.initialCapital[c] = 0; 
         });
+        
         db.cityHawalaCounters = db.cityHawalaCounters || {};
         db.cities.forEach(city => { 
             if (!db.cityHawalaCounters[city.code]) { db.cityHawalaCounters[city.code] = { Outgoing: 1001, Incoming: 1001 }; } 
         });
+
         await dbAdapter.saveAll(db);
+        
+        // فراخوانی چک کردن حقوق اتوماتیک
+        if(typeof checkAutoMonthlySalary === 'function') {
+            checkAutoMonthlySalary();
+        }
+
     } catch (e) { console.error("DB Load Error", e); alert("خطا در بارگذاری پایگاه داده"); }
 }
 
@@ -2510,7 +2556,6 @@ function handleGlobalKeydown(e) {
     }
     if (e.key.startsWith('F')) {
         const key = e.key;
-        // اضافه شدن F8 به لیست کلیدهای ممنوعه مرورگر
         if(['F1','F2','F3','F4','F6','F8','F9','F10'].includes(key)) e.preventDefault();
         
         switch (key) {
@@ -2519,14 +2564,12 @@ function handleGlobalKeydown(e) {
             case 'F3': go('accounts'); break;
             case 'F4': go('exchange'); break;
             case 'F6': go('ttPage'); break;
-            
-            // --- کد جدید برای کلید F8 (دریافت) ---
+           
             case 'F8': 
                 if(document.querySelector('.page.active').id === 'hawala') {
                     openHawalaModal('Incoming');
                 }
                 break;
-            // ------------------------------------
 
             case 'F9': handleF9(); break; 
             case 'F10': handleF10(); break; 
@@ -2538,7 +2581,6 @@ function handleF9() {
     if (document.querySelector('.modal[style*="flex"]')) return;
     const activePage = document.querySelector('.page.active').id;
     
-    // تغییر این بخش:
     if (activePage === 'hawala') {
         openHawalaModal('Outgoing'); // پیش‌فرض F9 را روی ارسال می‌گذاریم
     }
@@ -2578,22 +2620,20 @@ function auth() {
         document.getElementById('mainApp').style.display = 'flex';
         document.getElementById('sidebarUserInfo').innerText = `${u}`;
         
-        applyPermissions(); // اعمال محدودیت‌ها
+        applyPermissions(); 
         applyTranslations();
 
-        // ** منطق هوشمند هدایت کاربر **
         if (user.perms.admin) {
-            go('dashboard'); // مدیر به داشبورد برود
+            go('dashboard'); 
         } else if (user.perms.hawala) {
-            go('hawala'); // اگر فقط حواله دارد، مستقیم برود به حواله
+            go('hawala'); 
         } else if (user.perms.exchange) {
-            go('exchange'); // اگر فقط صراف است
+            go('exchange'); 
         } else if (user.perms.accounts) {
-            go('accounts'); // اگر حسابدار است
+            go('accounts'); 
         } else if (user.perms.tt) {
             go('ttPage');
         } else {
-            // اگر هیچ دسترسی ندارد
             alert("شما دسترسی به هیچ بخشی ندارید!");
         }
         return;
@@ -2603,51 +2643,38 @@ function auth() {
 
 function logout() { location.reload(); }
 function applyPermissions() {
-    // اگر کاربر ادمین است، همه چیز را ببیند
     const isFullAdmin = currentUser?.perms.admin; 
     
-    // 1. مدیریت دکمه‌های مخصوص ادمین (مثل گزارشات، مدیریت کارمند و...)
     document.querySelectorAll('.admin-only-btn').forEach(el => { 
         el.style.display = isFullAdmin ? 'flex' : 'none'; 
     });
 
-    // 2. مدیریت صفحات مخصوص ادمین (مثل داشبورد اصلی سود و زیان)
-    // نکته: اگر می‌خواهید کارمند عادی اصلا داشبورد سود را نبیند، خط زیر را فعال نگه دارید
     if (!isFullAdmin) {
         document.getElementById('nav-dashboard').style.display = 'none'; // مخفی کردن دکمه داشبورد برای کارمند
     } else {
         document.getElementById('nav-dashboard').style.display = 'flex';
     }
 
-    // 3. بررسی تک تک دسترسی‌ها و مخفی کردن دکمه‌ها
-    // اگر دسترسی حواله ندارد، دکمه حواله مخفی شود
     const btnHawala = document.getElementById('nav-hawala');
     if (btnHawala) btnHawala.style.display = (isFullAdmin || currentUser.perms.hawala) ? 'flex' : 'none';
 
-    // اگر دسترسی صرافی ندارد
     const btnEx = document.getElementById('nav-exchange');
     if (btnEx) btnEx.style.display = (isFullAdmin || currentUser.perms.exchange) ? 'flex' : 'none';
 
-    // اگر دسترسی حساب‌ها ندارد
     const btnAcc = document.getElementById('nav-accounts');
     if (btnAcc) btnAcc.style.display = (isFullAdmin || currentUser.perms.accounts) ? 'flex' : 'none';
 
-    // اگر دسترسی TT ندارد
     const btnTT = document.getElementById('nav-tt');
     if (btnTT) btnTT.style.display = (isFullAdmin || currentUser.perms.tt) ? 'flex' : 'none';
 
-    // کریپتو (معمولا با صرافی باز می‌شود یا دسترسی جداگانه. اینجا فرض بر دسترسی صرافی یا ادمین است)
     const btnCrypto = document.getElementById('nav-crypto');
     if (btnCrypto) btnCrypto.style.display = (isFullAdmin || currentUser.perms.exchange) ? 'flex' : 'none';
 
-    // بخش تنظیمات: مخفی کردن بخش‌های ادمین
     const settingsAdminSection = document.getElementById('adminMenuSection');
     if (settingsAdminSection) settingsAdminSection.style.display = isFullAdmin ? 'block' : 'none';
 
-    // اگر ادمین است، لیست کاربران را هم رندر کند
     if (isFullAdmin) renderUserManagement();
 
-    // فیلتر گروه B
     const hasGroupAccess = currentUser.perms.access_group_b || currentUser.perms.admin;
     const filterDiv = document.getElementById('divFilterGroup');
     if(filterDiv) filterDiv.style.display = hasGroupAccess ? 'block' : 'none';
@@ -2656,7 +2683,6 @@ function applyPermissions() {
 function updateUI() {
     const t = TRANSLATIONS[currentLang];
     const currOptions = db.currencies.map(c => `<option value="${c}">${c}</option>`).join('');
-    // اضافه شدن hCommCurr به لیست زیر
     document.querySelectorAll('#hCurr, #editHCurr, #txCurr, #exSellCurr, #exBuyCurr, #cryptoCurr, #ttCurr, #ctCurr, #fxBaseCurr, #fxQuoteCurr, #hCommCurr').forEach(select => { 
         select.innerHTML = currOptions; 
     });
@@ -2673,7 +2699,6 @@ function updateUI() {
     const currToDelete = document.getElementById('currToDelete'); 
     if (currToDelete) currToDelete.innerHTML = db.currencies.map(c => `<option value="${c}">${c}</option>`).join('');
     
-    // نمایش پیش‌نمایش لوگو
     if(db.settings && db.settings.logo) {
         const img = document.getElementById('logoPreview');
         if(img) { img.src = db.settings.logo; img.style.display = 'block'; }
@@ -2697,55 +2722,42 @@ function renderAnalysis() {
     const tbody = document.getElementById('analysisBody');
     tbody.innerHTML = '';
     
-    // 1. محاسبه مانده حساب مشتریان
     let customerBalances = {};
     for (let custName in db.accounts) {
         db.accounts[custName].forEach(tx => {
             if (!customerBalances[tx.curr]) customerBalances[tx.curr] = 0;
-            // در حسابداری: بدهکار (+) یعنی مشتری باید بدهد (سرمایه ماست)
-            // بستانکار (-) یعنی ما باید بدهیم (بدهی ماست)
+
             customerBalances[tx.curr] += (tx.debit - tx.credit);
         });
     }
 
-    // 2. محاسبه مانده کتاب حواله (اصلاح شده برای رفع مشکل شما)
     let cityBalances = {};
     db.hawalas.forEach(h => {
         if (!cityBalances[h.curr]) cityBalances[h.curr] = 0;
         
-        // --- اصلاح مهم ---
         if (h.type === 'Outgoing') {
-            // حواله ارسالی: ما پول نقد گرفتیم، پس به شهر بدهکار شدیم (تا زمانی که آنها پرداخت کنند)
-            // این باعث می‌شود پول نقدی که اضافه شده، خنثی شود و سرمایه الکی بالا نرود.
+
             cityBalances[h.curr] += h.amt; 
         } 
         else if (h.type === 'Incoming') {
-            // حواله دریافتی:
-            // فقط زمانی که وضعیت "Done" (اجرا شده) باشد محاسبه می‌کنیم.
-            // چون وقتی اجرا شد، یعنی ما پول نقد دادیم، حالا شهر به ما بدهکار است.
+
             if (h.status === 'Done') {
                 cityBalances[h.curr] -= h.amt; 
             }
-            // اگر Pending باشد، یعنی پول دست نخورده و هنوز طلبی هم از شهر نداریم. پس محاسبه نمی‌شود.
+
         } 
     });
 
-    // 3. نمایش جدول
     db.currencies.forEach(curr => {
-        // موجودی فیزیکی صندوق + سرمایه اولیه
         const cash = (db.cashBox[curr] || 0) + (db.initialCapital[curr] || 0);
         
-        // مانده حساب مشتریان
         const custBal = customerBalances[curr] || 0; 
         
-        // مانده حساب شهرها (کتاب)
         const cityBal = cityBalances[curr] || 0;
 
-        // فرمول سرمایه خالص:
-        // موجودی نقد + (طلب از مشتری) - (بدهی به نماینده‌ها)
         const netCapital = cash + custBal - cityBal;
 
-        // تنظیمات نمایش نرخ تبدیل
+
         let defaultRate = '';
         if(db.avgRates && db.avgRates[curr]) defaultRate = db.avgRates[curr];
         else if(curr === 'USD' || curr === 'USDT') defaultRate = '1';
@@ -2840,27 +2852,21 @@ function updateGrandTotal() {
 function renderDashboard() { 
     const hasAccess = currentUser.perms.access_group_b || currentUser.perms.admin;
 
-    // --- محاسبه زنده سود و زیان از روی تاریخچه تراکنش‌ها ---
     let totalProfit = {}; 
     let dailyProfit = {};
     const startOfDay = new Date();
     startOfDay.setHours(0,0,0,0); 
     const startTime = startOfDay.getTime();
 
-    // حلقه روی تمام لاگ‌ها برای جمع‌بندی سود
     db.journal.forEach(log => {
-        // فقط اگر تراکنش صرافی یا کریپتو باشد و فیلد profit داشته باشد
+
         if ((log.type === 'EXCHANGE' || log.type === 'CRYPTO') && log.data && log.data.profit) {
             
-            // تعیین ارز پایه سود (معمولا ارزی که گرفتیم، مثلا دلار)
-            // در تابع قبلی quoteCurr به عنوان ارز سود در نظر گرفته شده
             const pCurr = log.data.quoteCurr || log.data.curr; 
             
             if (pCurr) {
-                // جمع سود کل
                 totalProfit[pCurr] = (totalProfit[pCurr] || 0) + log.data.profit;
 
-                // جمع سود امروز
                 if (log.time >= startTime) {
                     dailyProfit[pCurr] = (dailyProfit[pCurr] || 0) + log.data.profit;
                 }
@@ -2868,14 +2874,12 @@ function renderDashboard() {
         }
     });
 
-    // --- نمایش سرمایه اولیه ---
     let initHtml = ''; 
     db.currencies.forEach(c => { 
         if (db.initialCapital[c] > 0) initHtml += `<span style="margin-left:10px">${db.initialCapital[c].toLocaleString()} ${c}</span>`; 
     });
     document.getElementById('dispInitialCap').innerHTML = initHtml || `<span style="opacity:0.6">-</span>`;
 
-    // --- نمایش سود کل ---
     let profitHtml = ''; 
     for (const c in totalProfit) { 
         const val = totalProfit[c]; 
@@ -2886,7 +2890,6 @@ function renderDashboard() {
     }
     document.getElementById('dispProfit').innerHTML = profitHtml || `<span style="color:var(--text-muted)">0</span>`;
 
-    // --- نمایش سود امروز ---
     let dailyHtml = '';
     for (const c in dailyProfit) {
         const val = dailyProfit[c];
@@ -2897,27 +2900,22 @@ function renderDashboard() {
     }
     document.getElementById('dispDailyProfit').innerHTML = dailyHtml || `<span style="opacity:0.5; font-size:14px">فعلا هیچ</span>`;
 
-    // --- بقیه کدهای داشبورد (موجودی صندوق و ...) بدون تغییر می‌مانند ---
     const cashStatsDiv = document.getElementById('cashStats'); 
     const cryptoStatsDiv = document.getElementById('cryptoStats');
     cashStatsDiv.innerHTML = ''; 
     cryptoStatsDiv.innerHTML = '';
     db.currencies.forEach(c => {
         const amount = (db.cashBox[c] || 0) + (db.initialCapital[c] || 0);
-        // نمایش موجودی صفر هم مفید است، پس شرط حذف شد
         const colorClass = amount < 0 ? 'var(--danger)' : 'var(--gold-primary)';
         const boxHtml = `<div class="stat-box"><div class="label" style="color:var(--text-muted); font-weight:800">${c}</div><div class="stat-val" style="color:${colorClass}">${amount.toLocaleString()}</div></div>`;
         if (CRYPTO_LIST.includes(c)) cryptoStatsDiv.innerHTML += boxHtml; 
         else cashStatsDiv.innerHTML += boxHtml;
     });
     
-    // (کد نمایش بالانس شهرها و کمیشن‌ها را از کد اصلی خودتان نگه دارید یا اینجا کپی کنید)
-    // برای جلوگیری از طولانی شدن، فقط بخش‌های مربوط به سود و زیان را در اینجا آوردم.
-    // ...
-    renderCityBalancesAndCommissions(); // فرض کنید این یک تابع جداگانه است یا کدش را اینجا بگذارید
+
+    renderCityBalancesAndCommissions(); 
 }
 
-// تابع کمکی برای رندر بخش پایین داشبورد (شهرها و کمیشن) که قبلا داخل رندر داشبورد بود
 function renderCityBalancesAndCommissions() {
      const cityStatsDiv = document.getElementById('cityStats'); 
      if(!cityStatsDiv) return;
@@ -2978,7 +2976,6 @@ function renderJournal() {
 }
 
 async function deleteLog(time, logId) {
-    // پیدا کردن لاگ مورد نظر
     const logIndex = db.journal.findIndex(j => (j.id && j.id === logId) || j.time === time);
     if (logIndex === -1) return;
     const logEntry = db.journal[logIndex];
@@ -2989,41 +2986,32 @@ async function deleteLog(time, logId) {
     
     if (!confirm(msg)) return;
 
-    // شروع عملیات بازگشت
     if (logEntry.type && logEntry.data) {
         const d = logEntry.data;
         try {
-            // --- 1. بازگشت حواله ثبت شده (مهمترین بخش برای مشکل شما) ---
             if (logEntry.type === 'HAWALA_SUBMIT') {
                 const hIndex = db.hawalas.findIndex(h => h.id === d.hawalaId);
                 
-                // اگر حواله هنوز در لیست وجود دارد
                 if (hIndex > -1) {
                     const h = db.hawalas[hIndex];
                     
-                    // الف) بازگشت پول نقد (حواله ارسالی)
-                    // وقتی حواله ارسال کردید، پول گرفتید (+). پس الان باید کم شود (-).
+
                     if (h.type === 'Outgoing' && !h.isInternal) { 
-                        db.cashBox[h.curr] = (db.cashBox[h.curr] || 0) - h.amt; // اصلاح شد: تفریق
+                        db.cashBox[h.curr] = (db.cashBox[h.curr] || 0) - h.amt; 
                         
-                        // کمیشن هم باید برگردد (کم شود)
+
                         if(h.comm) {
                             const cCurr = h.commCurr || h.curr;
-                            db.cashBox[cCurr] = (db.cashBox[cCurr] || 0) - h.comm; // اصلاح شد: تفریق
+                            db.cashBox[cCurr] = (db.cashBox[cCurr] || 0) - h.comm; 
                         }
                     }
-                    // ب) بازگشت پول نقد (حواله دریافتی) - معمولا در زمان اجرا پول کم میشود نه ثبت
-                    // اما اگر در سیستم شما موقع ثبت دریافتی پولی جابجا شده باشد اینجا مدیریت میشود.
-                    // (در سیستم فعلی ثبت دریافتی Pending است و پولی جابجا نمیکند، پس کاری نداریم)
 
-                    // پ) حذف از حساب مشتری (اگر حساب‌دار بوده)
                     if (h.isInternal && h.internalCust && db.accounts[h.internalCust]) {
                         if(d.accId) {
                              db.accounts[h.internalCust] = db.accounts[h.internalCust].filter(acc => acc.id !== d.accId);
                         }
                     }
 
-                    // ت) حذف خود حواله از لیست
                     db.hawalas.splice(hIndex, 1);
                 }
 
@@ -3043,7 +3031,6 @@ async function deleteLog(time, logId) {
                 }
             }
 
-            // --- 2. بازگشت صرافی (Exchange) ---
             else if (logEntry.type === 'EXCHANGE') {
                 if (d.isInternal) {
                     if (d.cust && db.accounts[d.cust]) {
@@ -3051,13 +3038,11 @@ async function deleteLog(time, logId) {
                     }
                 } else {
                     if (d.direction === 'Buy') { 
-                        // ما خرید کرده بودیم (ارز گرفتیم +، پول دادیم -)
-                        // بازگشت: ارز را میدهیم -، پول را پس میگیریم +
+
                         db.cashBox[d.baseCurr] -= d.baseAmt; 
                         db.cashBox[d.quoteCurr] += d.quoteAmt; 
                     } else { 
-                        // ما فروخته بودیم (ارز دادیم -، پول گرفتیم +)
-                        // بازگشت: ارز را پس میگیریم +، پول را پس میدهیم -
+
                         db.cashBox[d.baseCurr] += d.baseAmt; 
                         db.cashBox[d.quoteCurr] -= d.quoteAmt; 
                     }
@@ -3067,13 +3052,12 @@ async function deleteLog(time, logId) {
                 }
             } 
 
-            // --- 3. بازگشت تراکنش دستی (واریز/برداشت) ---
             else if (logEntry.type === 'TX') {
                 if (d.type === 'debit') {
-                    // برداشت بوده (پول کم شده) -> پول برمیگردد (+)
+
                     db.cashBox[d.curr] += d.amt; 
                 } else {
-                    // واریز بوده (پول زیاد شده) -> پول کم میشود (-)
+
                     db.cashBox[d.curr] -= d.amt; 
                 }
                 if (db.accounts[d.cust]) {
@@ -3081,7 +3065,6 @@ async function deleteLog(time, logId) {
                 }
             }
 
-            // --- 4. بازگشت اجرای حواله ورودی (تسویه) ---
             else if (logEntry.type === 'HAWALA_EXEC_IN') {
                 const h = db.hawalas.find(h => h.id === d.hawalaId);
                 if(h) {
@@ -3093,17 +3076,14 @@ async function deleteLog(time, logId) {
                             db.accounts[d.cust] = db.accounts[d.cust].filter(acc => acc.id !== d.accId);
                         }
                     } else {
-                        // در اجرای حواله ورودی، ما پول پرداخت کرده بودیم (صندوق کم شده بود)
-                        // حالا حذف میکنیم، پس پول به صندوق برمیگردد (+)
+
                         db.cashBox[d.curr] += d.amt;
                     }
                 }
             }
 
-            // --- 5. بازگشت TT ---
             else if (logEntry.type === 'TT_EXTERNAL') {
-                // در TT نقدی، پول دریافت کردیم (+)
-                // حالا حذف میکنیم، پول کم میشود (-)
+
                 db.cashBox[d.curr] -= d.amt;
             }
             else if (logEntry.type === 'TT_INTERNAL') {
@@ -3141,7 +3121,6 @@ async function deleteLog(time, logId) {
         }
     }
 
-    // حذف خود لاگ
     db.journal.splice(logIndex, 1);
     
     await saveDB(); 
@@ -3164,23 +3143,22 @@ function openSettings() {
 }
 
 function getNewHawalaNumber(cityCode, type) {
-    // 1. لیست تمام شماره کتاب‌های موجود برای این شهر و این نوع (ارسالی/دریافتی) را می‌گیریم
+
     const existingNumbers = db.hawalas
         .filter(h => h.cityBook === cityCode && h.type === type)
-        .map(h => parseInt(h.bookNum)) // تبدیل به عدد
-        .sort((a, b) => a - b); // مرتب‌سازی از کوچک به بزرگ
+        .map(h => parseInt(h.bookNum)) 
+        .sort((a, b) => a - b); 
 
-    // 2. از 1001 شروع می‌کنیم و چک می‌کنیم کدام عدد خالی است
+
     let nextNum = 1001;
     for (let num of existingNumbers) {
         if (num === nextNum) {
-            nextNum++; // اگر این شماره وجود دارد، برو سراغ بعدی
+            nextNum++; 
         } else if (num > nextNum) {
-            // اگر شماره موجود بزرگتر از شماره مورد نظر ماست، یعنی اینجا (nextNum) خالی است
             return nextNum;
         }
     }
-    // 3. اگر هیچ جای خالی در بین اعداد نبود، عدد بعدی را برمی‌گرداند
+
     return nextNum;
 }
 
@@ -3204,13 +3182,10 @@ async function submitHawala() {
     const hAmt = parseFloat(document.getElementById('hAmt').value); 
     const hCurr = document.getElementById('hCurr').value; 
     
-    // گرفتن اطلاعات کامل
+
     const hSender = document.getElementById('hSender').value.trim(); 
     const hReceiver = document.getElementById('hReceiver').value.trim();
-    // ... بقیه فیلدها همان کد قبلی ...
-    // (برای کوتاه شدن کد اینجا فقط قسمت‌های مهم لاگ را می‌آورم، شما بقیه متغیرها مثل hSenderLast و ... را نگه دارید)
-    // ...
-    // ...
+
     
     let rawComm = parseFloat(document.getElementById('hComm').value) || 0; 
     const commType = document.getElementById('hCommType').value;
@@ -3219,7 +3194,6 @@ async function submitHawala() {
 
     if (!hCityBook || hAmt <= 0 || !hSender || !hReceiver) { alert("اطلاعات ناقص است"); return; }
     
-    // ... (قسمت‌های مربوط به DataGroup و بوک نامبر همان کد قبلی) ...
     let dataGroup = 'A'; 
     if (currentUser.perms.access_group_b || currentUser.perms.admin) dataGroup = document.getElementById('hGroup').value;
     const isInternal = (hawalaCustType === 'internal');
@@ -3228,7 +3202,6 @@ async function submitHawala() {
     const uniqueId = `${hCityBook}-${hType === 'Outgoing' ? 'O' : 'I'}-${bookNum}`;
     const displayNum = `${hCityBook}-${bookNum}`;
 
-    // آبجکت حواله (همان کد قبلی)
     const newHawala = { 
         id: uniqueId, displayId: displayNum, bookNum: bookNum, type: hType, 
         cityBook: hCityBook, amt: hAmt, curr: hCurr, 
@@ -3239,13 +3212,13 @@ async function submitHawala() {
         status: hType === 'Outgoing' ? 'Done' : 'Pending',
         isInternal: isInternal, internalCust: isInternal ? custName : null, dataGroup: dataGroup 
     };
-    // توجه: در کد اصلی شما تمام فیلدها (senderLast, receiverID و ...) را در آبجکت بالا حتما بگذارید.
+
 
     let logData = { hawalaId: uniqueId, isInternal: isInternal };
 
-    // *** تغییر مهم: متن لاگ دقیق ***
+
     if (hType === 'Outgoing') { 
-        // متن دقیق برای حواله ارسالی
+
         let logText = `ارسال حواله (${displayNum}) به ${hCityBook} | فرستنده: ${hSender} | گیرنده: ${hReceiver} | کمیشن: ${hComm} ${commCurr}`;
         
         if (isInternal) {
@@ -3258,7 +3231,6 @@ async function submitHawala() {
             logTx('حواله (ارسالی)', logText, `دریافت نقد: ${hAmt} ${hCurr}`, 'HAWALA_SUBMIT', logData); 
         }
     } else { 
-        // متن دقیق برای حواله دریافتی
         let logText = `ثبت حواله وارده (${displayNum}) از ${hCityBook} | گیرنده: ${hReceiver} | فرستنده: ${hSender}`;
         logTx('حواله (دریافتی)', logText, `در انتظار: ${hAmt} ${hCurr}`, 'HAWALA_SUBMIT', logData); 
     }
@@ -3321,10 +3293,10 @@ function filterHawala() {
     const filterGroup = hasAccess ? document.getElementById('filterHGroup').value : 'A';
 
     const list = db.hawalas.filter(h => {
-        // ۱. اگر دسترسی ندارد، رکوردهای B را کلاً نشان نده
+
         if (!hasAccess && h.dataGroup === 'B') return false;
 
-        // ۲. اگر فیلتر گروه انتخاب شده، اعمال کن
+
         if (hasAccess && filterGroup !== 'All') {
             const g = h.dataGroup || 'A';
             if (g !== filterGroup) return false;
@@ -3337,7 +3309,7 @@ function filterHawala() {
 
     const t = TRANSLATIONS[currentLang];
     document.getElementById('hawalaBody').innerHTML = list.map(h => {
-        // نمایش برچسب B فقط برای مدیران
+
         const groupLabel = (hasAccess && h.dataGroup === 'B') ? '<b style="color:red; font-size:10px;">(B)</b> ' : '';
         
         let opBtns = `<button class="btn btn-outline no-print" style="padding:5px 8px; font-size:12px; margin-left:5px" onclick="printH('${h.id}')">🖨</button>`;
@@ -3562,9 +3534,9 @@ function setExType(type) {
     document.getElementById('exOptInternal').classList.toggle('active', type === 'internal'); 
     document.getElementById('exOptExternal').classList.toggle('active', type === 'external'); 
     
-    // مدیریت نمایش بخش‌ها
+
     document.getElementById('exInternalSec').style.display = type === 'internal' ? 'block' : 'none'; 
-    // اگر مشتری خارجی بود، فیلدهای مشخصات را نشان بده
+
     const extSec = document.getElementById('exExternalSec');
     if(extSec) extSec.style.display = type === 'external' ? 'block' : 'none';
 }
@@ -3585,7 +3557,7 @@ function setFxDirection(dir) {
     calcFx(); 
 }
 function toggleFxOperator() { fxOperator = fxOperator === 'multiply' ? 'divide' : 'multiply'; document.getElementById('fxOpDisplay').innerText = fxOperator === 'multiply' ? '✖' : '➗'; calcFx(); }
-// 1. محاسبه لحظه‌ای سود در زمان تایپ کردن
+
 function calcFx() { 
     const baseAmt = parseFloat(document.getElementById('fxBaseAmt').value) || 0; 
     const rate = parseFloat(document.getElementById('fxRate').value) || 1; 
@@ -3600,32 +3572,24 @@ function calcFx() {
     } 
     document.getElementById('fxQuoteAmt').value = quoteAmt.toFixed(2); 
 
-    // --- محاسبه اتوماتیک سود (فقط در حالت فروش) ---
     if (fxDirection === 'Sell') {
-        // 1. تلاش برای پیدا کردن نرخ خرید از حافظه
         let avgBuyRate = db.avgRates ? db.avgRates[baseCurr] : 0;
 
-        // اگر نرخ در حافظه نبود (صفر بود)، سعی کن از تنظیمات اولیه بخوانی
         /* نکته: چون در تابع setInitialCapital ما نرخ را مستقیم در avgRates میریزیم، 
            همان خط بالا کافیست. اما محض اطمینان چک میکنیم */
         
         if (avgBuyRate && avgBuyRate > 0) {
-            // نمایش نرخ خرید محض اطلاع کاربر
             document.getElementById('exCostBasis').value = avgBuyRate.toFixed(4); 
             
-            // محاسبه هزینه تمام شده (Cost)
-            // اگر نرخ مثل تومان (بزرگ) باشد تقسیم، اگر مثل یورو (کوچک) باشد ضرب
             let totalCost = 0;
-            if (avgBuyRate > 2) totalCost = baseAmt / avgBuyRate; // مثلا تومان
-            else totalCost = baseAmt * avgBuyRate; // مثلا یورو/دلار
+            if (avgBuyRate > 2) totalCost = baseAmt / avgBuyRate; 
+            else totalCost = baseAmt * avgBuyRate;
             
-            // سود = مبلغ فروش - هزینه تمام شده
             const estProfit = quoteAmt - totalCost;
             
             const profitEl = document.getElementById('estimatedProfit');
             profitEl.innerText = estProfit.toLocaleString(undefined, {maximumFractionDigits: 2}) + " " + quoteCurr;
             
-            // تغییر رنگ (سبز سود، قرمز زیان)
             if(estProfit >= 0) {
                 profitEl.style.color = "var(--success)";
                 profitEl.innerHTML += " (سود)";
@@ -3660,7 +3624,6 @@ async function submitExchange() {
     let profit = 0; 
     let effectiveRate = (baseAmt > 0) ? (quoteAmt / baseAmt) : 0;
 
-    // --- محاسبات سود و میانگین (همان کدهای قبلی شما) ---
     if (fxDirection === 'Sell') {
         const avgBuyRate = db.avgRates[baseCurr] || 0;
         if (avgBuyRate > 0) {
@@ -3697,7 +3660,7 @@ async function submitExchange() {
         }
     }
 
-    // --- لاگ و ذخیره ---
+
     const logData = { 
         baseCurr, baseAmt, quoteCurr, quoteAmt, 
         direction: fxDirection, 
@@ -3724,7 +3687,7 @@ async function submitExchange() {
         logData.isInternal = true; logData.cust = cust; logData.accId1 = id1; logData.accId2 = id2;
         logDetail = `${actionType} (حساب): ${baseAmt} ${baseCurr} - مشتری: ${cust}`;
     } else {
-        // دریافت نام مشتری آزاد برای لاگ
+
         const exName = document.getElementById('exExtName').value || "نقدی";
         if (fxDirection === 'Buy') { 
             db.cashBox[baseCurr] = (db.cashBox[baseCurr] || 0) + baseAmt; 
@@ -3740,16 +3703,11 @@ async function submitExchange() {
     await saveDB(); 
     renderDashboard(); 
     
-    // *** تغییر مهم: چاپ خودکار رسید ***
-    printExchangeReceipt();
-    
-    // بعد از پرینت، فرم را خالی میکنیم (اختیاری)
-    // document.getElementById('fxBaseAmt').value = '';
-    // document.getElementById('fxQuoteAmt').value = '';
+
+    printExchangeReceipt();    
 }
 
 function printHawalaList() {
-    // 1. گرفتن فیلترها
     const filterCity = document.getElementById('filterHCity').value;
     const filterType = document.getElementById('filterHType').value;
     const filterStatus = document.getElementById('filterHStatus').value;
@@ -3759,7 +3717,6 @@ function printHawalaList() {
         return;
     }
 
-    // 2. فیلتر کردن داده‌ها
     const filtered = db.hawalas.filter(h =>
         (filterCity === 'All' || h.cityBook === filterCity) &&
         (h.type === filterType) &&
@@ -3771,23 +3728,18 @@ function printHawalaList() {
         return;
     }
 
-    // 3. شناسایی ارزهای موجود در لیست (برای ستون‌های مبلغ)
     const presentCurrencies = [...new Set(filtered.map(h => h.curr))];
 
-    // 4. محاسبه جمع کل مبالغ و جمع کل کمیشن‌ها (به تفکیک ارز)
     let amountTotals = {};
     let commTotals = {}; // آبجکت جدید برای نگهداری جمع کمیشن هر ارز
 
-    // مقداردهی اولیه
     presentCurrencies.forEach(c => amountTotals[c] = 0);
 
     filtered.forEach(h => {
         // جمع مبلغ حواله
         amountTotals[h.curr] += h.amt;
 
-        // جمع کمیشن (با تشخیص ارز کمیشن)
         if(h.comm && h.comm !== 0) {
-            // اگر ارز کمیشن جداگانه ثبت شده بود (commCurr) از آن استفاده کن، وگرنه از ارز خود حواله
             const cCurr = h.commCurr || h.curr;
             
             if(!commTotals[cCurr]) commTotals[cCurr] = 0;
@@ -3795,12 +3747,10 @@ function printHawalaList() {
         }
     });
 
-    // 5. ساخت هدر جدول برای ارزها
     let currencyHeaders = presentCurrencies.map(c => 
         `<th style="background:#e0e0e0;">مبلغ (${c})</th>`
     ).join('');
 
-    // 6. ساخت ردیف‌های جدول
     const tableRows = filtered.map((h, i) => {
         const sName = `${h.sender} ${h.senderLast||''}`;
         const sFather = h.senderFather ? `ولد: ${h.senderFather}` : '';
@@ -3816,7 +3766,6 @@ function printHawalaList() {
         const desc = h.receiverPurpose || h.senderPurpose || '-';
         const commText = h.comm ? `${h.comm} <span style="font-size:9px">(${h.commCurr||h.curr})</span>` : '0';
 
-        // ساخت ستون‌های مبلغ (تفکیک شده)
         const amountCells = presentCurrencies.map(curr => {
             if (h.curr === curr) {
                 return `<td style="text-align:center; font-weight:bold; font-size:13px;">${h.amt.toLocaleString()}</td>`;
@@ -3851,12 +3800,10 @@ function printHawalaList() {
         `;
     }).join('');
 
-    // 7. ساخت HTML برای جمع مبالغ (بالای صفحه)
     let summaryAmountsHtml = presentCurrencies.map(c => 
         `<div class="summary-item">مجموع ${c}: <b dir="ltr">${amountTotals[c].toLocaleString()}</b></div>`
     ).join('');
 
-    // 8. ساخت HTML برای جمع کمیشن‌ها (اصلاح شده: نمایش تفکیکی)
     let summaryCommsHtml = '';
     const commCurrencies = Object.keys(commTotals);
     if (commCurrencies.length === 0) {
@@ -3864,10 +3811,9 @@ function printHawalaList() {
     } else {
         summaryCommsHtml = commCurrencies.map(c => 
             `<span style="margin:0 5px; color:#d32f2f;"><b dir="ltr">${commTotals[c].toLocaleString()}</b> ${c}</span>`
-        ).join(' | '); // جداکننده بین ارزهای کمیشن
+        ).join(' | '); 
     }
 
-    // 9. باز کردن صفحه چاپ
     const title = filterType === 'Outgoing' ? 'کتاب حوالجات ارسالی' : 'کتاب حوالجات دریافتی';
     const win = window.open('', '_blank', 'width=1200,height=800');
 
@@ -3960,7 +3906,6 @@ function printH(id) {
     let content = '';
 
     if (h.type === 'Outgoing') {
-        // --- رسید ارسالی (بدون تغییر) ---
         content = `
         <html><head><title>${h.displayId}</title>
         <style>@page { size: 80mm auto; margin: 0; } body { font-family: 'Vazirmatn', Tahoma; direction: rtl; padding: 5px; font-size: 10pt; width: 78mm; } .line { display: flex; justify-content: space-between; border-bottom: 1px dashed #000; padding: 3px 0; } .center { text-align: center; } .big { font-size: 14pt; font-weight: bold; }</style>
@@ -3978,7 +3923,6 @@ function printH(id) {
             <div class="center">امضاء فرستنده / متصدی</div><br><br>.
         </body></html>`;
     } else {
-        // --- رسید دریافتی (اصلاح شده: جابجایی تاریخ‌ها) ---
         content = `
         <!DOCTYPE html>
         <html lang="fa" dir="rtl">
@@ -4090,18 +4034,15 @@ function printTodayJournal() {
 }
 
 function printExchangeReceipt() {
-    // 1. دریافت اطلاعات معامله
     const baseAmt = document.getElementById('fxBaseAmt').value;
     const quoteAmt = document.getElementById('fxQuoteAmt').value;
     const baseCurr = document.getElementById('fxBaseCurr').value;
     const quoteCurr = document.getElementById('fxQuoteCurr').value;
     const rate = document.getElementById('fxRate').value;
     const desc = document.getElementById('exDesc').value || '';
-    
-    // تشخیص نوع معامله
+
     const type = fxDirection === 'Buy' ? 'خرید ارز (Purchase)' : 'فروش ارز (Sale)';
-    
-    // 2. دریافت کامل مشخصات مشتری
+
     let custName = "";
     let custFather = "";
     let custPhone = "";
@@ -4109,15 +4050,12 @@ function printExchangeReceipt() {
     let custTypeLabel = "";
 
     if (exType === 'internal') {
-        // --- مشتری حساب‌دار ---
         custName = document.getElementById('exCustomer').value;
         custTypeLabel = "(حساب‌دار)";
-        // تلاش برای پیدا کردن شماره تلفن از دیتابیس مشتریان
         const custObj = db.customers.find(c => c.name === custName);
         if (custObj && custObj.phone) custPhone = custObj.phone;
 
     } else {
-        // --- مشتری نقدی (آزاد) ---
         custName = document.getElementById('exExtName').value || "مشتری نقدی";
         custFather = document.getElementById('exExtFather').value;
         custPhone = document.getElementById('exExtPhone').value;
@@ -4249,12 +4187,10 @@ function exportDB() { const a = document.createElement('a'); a.href = URL.create
 function importDB() { const i = document.createElement('input'); i.type = 'file'; i.onchange = e => { const r = new FileReader(); r.onload = async ev => { try { db = JSON.parse(ev.target.result); await dbAdapter.saveAll(db); location.reload(); } catch (x) { alert('File Error'); } }; r.readAsText(e.target.files[0]); }; i.click(); }
 
 function exportHawalaToExcel() { 
-    // 1. گرفتن فیلترهای اعمال شده
     const filterCity = document.getElementById('filterHCity').value; 
     const filterType = document.getElementById('filterHType').value; 
     const filterStatus = document.getElementById('filterHStatus').value;
     
-    // 2. فیلتر کردن داده‌ها
     const filteredHawalas = db.hawalas.filter(h => 
         (filterCity === 'All' || h.cityBook === filterCity) && 
         (filterType === 'All' || h.type === filterType) && 
@@ -4268,7 +4204,6 @@ function exportHawalaToExcel() {
 
     const data = []; 
     
-    // --- بخش خلاصه (جمع مبالغ) در بالای اکسل ---
     data.push({ 'شماره_حواله': '--- گزارش مجموع ارزها ---' });
     
     let currencyTotals = {}; 
@@ -4284,11 +4219,9 @@ function exportHawalaToExcel() {
         }); 
     } 
     
-    // فاصله انداختن در اکسل
     data.push({}); 
     data.push({});
     
-    // --- بخش اصلی: لیست کامل با تمام جزئیات ---
     filteredHawalas.forEach(h => { 
         // پیدا کردن نام شهر
         const cityName = db.cities.find(c => c.code === h.cityBook)?.name || h.cityBook;
@@ -4301,19 +4234,16 @@ function exportHawalaToExcel() {
             'ارز': h.curr, 
             'کمیشن': h.comm || 0,
             
-            // --- جزئیات کامل فرستنده ---
             'نام_فرستنده': `${h.sender} ${h.senderLast || ''}`.trim(),
             'ولد_فرستنده': h.senderFather || '',
             'تلفن_فرستنده': h.senderPhone || '',
             'تذکره_فرستنده': h.senderID || '',
 
-            // --- جزئیات کامل گیرنده ---
             'نام_گیرنده': `${h.receiver} ${h.receiverLast || ''}`.trim(),
             'ولد_گیرنده': h.receiverFather || '',
             'تلفن_گیرنده': h.receiverPhone || '',
             'تذکره_گیرنده': h.receiverID || '',
 
-            // --- سایر اطلاعات ---
             'توضیحات/بابت': h.receiverPurpose || h.senderPurpose || '',
             'تاریخ_ثبت': new Date(h.regDate).toLocaleDateString('fa-IR'), 
             'تاریخ_اجرا': h.execDate ? new Date(h.execDate).toLocaleDateString('fa-IR') : '-',
@@ -4321,34 +4251,31 @@ function exportHawalaToExcel() {
         }); 
     });
     
-    // ساخت شیت اکسل
     const ws = XLSX.utils.json_to_sheet(data); 
     
-    // تنظیم عرض ستون‌ها (برای زیبایی فایل اکسل)
     const wscols = [
-        {wch: 15}, // شماره
-        {wch: 10}, // نوع
-        {wch: 15}, // شهر
-        {wch: 12}, // مبلغ
-        {wch: 8},  // ارز
-        {wch: 10}, // کمیشن
-        {wch: 20}, // نام فرستنده
-        {wch: 15}, // ولد فرستنده
-        {wch: 15}, // تلفن فرستنده
-        {wch: 15}, // تذکره فرستنده
-        {wch: 20}, // نام گیرنده
-        {wch: 15}, // ولد گیرنده
-        {wch: 15}, // تلفن گیرنده
-        {wch: 15}, // تذکره گیرنده
-        {wch: 25}, // توضیحات
-        {wch: 12}, // تاریخ
+        {wch: 15}, 
+        {wch: 10}, 
+        {wch: 15}, 
+        {wch: 12}, 
+        {wch: 8},  
+        {wch: 10}, 
+        {wch: 20}, 
+        {wch: 15}, 
+        {wch: 15}, 
+        {wch: 15}, 
+        {wch: 20}, 
+        {wch: 15}, 
+        {wch: 15}, 
+        {wch: 15}, 
+        {wch: 25}, 
+        {wch: 12}, 
     ];
     ws['!cols'] = wscols;
 
     const wb = XLSX.utils.book_new(); 
     XLSX.utils.book_append_sheet(wb, ws, "لیست حوالجات"); 
     
-    // دانلود فایل با تاریخ امروز
     XLSX.writeFile(wb, `Hawala_Full_${new Date().toLocaleDateString('fa-IR').replace(/\//g, '-')}.xlsx`);
 }
 function exportLedgerToExcel() {
@@ -4359,10 +4286,9 @@ function exportLedgerToExcel() {
     }
     
     const list = db.accounts[c] || []; 
-    // مرتب‌سازی تراکنش‌ها از قدیم به جدید برای صورت‌حساب
     list.sort((a, b) => a.date - b.date);
     
-    // محاسبه مانده نهایی هر ارز
+
     const balances = {}; 
     list.forEach(x => { 
         balances[x.curr] = (balances[x.curr] || 0) + (x.credit - x.debit); 
@@ -4390,11 +4316,11 @@ function exportLedgerToExcel() {
     const ws = XLSX.utils.json_to_sheet(data); 
     
     const wscols = [
-        {wch:15}, // عرض ستون تاریخ
-        {wch:50}, // عرض ستون شرح
-        {wch:10}, // عرض ستون ارز
-        {wch:15}, // عرض ستون بدهکار
-        {wch:15}  // عرض ستون بستانکار
+        {wch:15}, 
+        {wch:50}, 
+        {wch:10}, 
+        {wch:15}, 
+        {wch:15}  
     ]; 
     ws['!cols'] = wscols;
     
@@ -4408,13 +4334,10 @@ async function setInitialCapital() {
         if (!db.avgRates) db.avgRates = {}; 
         
         db.currencies.forEach(c => {
-            // ذخیره مقدار سرمایه
             db.initialCapital[c] = parseFloat(document.getElementById(`initCap_${c}`).value) || 0;
             
-            // --- بخش مهم جدید: ذخیره نرخ اولیه ---
             const rateInput = document.getElementById(`initRate_${c}`);
             if(rateInput && rateInput.value) { 
-                // این نرخ به عنوان اولین نرخ میانگین ذخیره می‌شود
                 db.avgRates[c] = parseFloat(rateInput.value); 
             }
         });
@@ -4493,11 +4416,10 @@ function renderAllAccountsList(list) {
 }
 function selectAndOpenLedger(name) { closeModal('modalAllAcc'); go('accounts'); setTimeout(() => { const sel = document.getElementById('selCustomer'); const opt = Array.from(sel.options).find(o => o.value === name); if (!opt) { return setTimeout(() => selectAndOpenLedger(name), 150); } sel.value = name; loadCustomerLedger(); }, 200); }
 function toggleAdminAccess(checkbox) { const isChecked = checkbox.checked; document.getElementById('perm_hawala').checked = isChecked; document.getElementById('perm_exchange').checked = isChecked; document.getElementById('perm_accounts').checked = isChecked; document.getElementById('perm_tt').checked = isChecked; }
-// --- شروع کدهای جدید پروفایل شرکت ---
+
 async function saveCompanyProfile() {
     if (!db.settings) db.settings = {};
     
-    // گرفتن اطلاعات از کادرها
     db.settings.companyName = document.getElementById('setCompName').value;
     db.settings.slogan = document.getElementById('setCompSlogan').value;
     db.settings.phone = document.getElementById('setCompPhone').value;
@@ -4515,49 +4437,62 @@ function applyCompanySettings() {
     const name = db.settings.companyName || "صرافی هراتی‌ها";
     const slogan = db.settings.slogan || "خدمات پولی و ارزی";
     
-    // تغییر نام در صفحه ورود
     const loginTitle = document.querySelector('.login-header-text');
     if(loginTitle) loginTitle.innerText = name;
     
     const loginSub = document.querySelector('.login-sub-text');
     if(loginSub) loginSub.innerText = slogan;
     
-    // تغییر نام در منوی سمت راست
     const sidebarInfo = document.querySelector('.sidebar h2');
     if(sidebarInfo) sidebarInfo.innerText = name;
 }
-// --- پایان کدهای جدید ---
+
 init();
 document.addEventListener('DOMContentLoaded', () => { 
     const fxContainer = document.querySelector('.fx-container'); 
     if (fxContainer) { setFxDirection('Buy'); calcFx(); } 
     setCryptoCustType('external');
 });
-// --- کدهای مدیریت کارمندان ---
+// =================================================
+// سیستم جدید مدیریت کارمندان (حقوق خودکار + صورت‌حساب)
+// =================================================
 
-// 1. اطمینان از وجود دیتابیس کارمندان
 if (!db.employees) { db.employees = []; }
 
-// 2. تابع نمایش لیست کارمندان
+// 1. نمایش لیست کارمندان
 function renderEmployees() {
     const tbody = document.getElementById('employeeBody');
     if (!tbody) return;
     
+    // محاسبه مانده دقیق از روی دفتر حساب
+    db.employees.forEach(emp => {
+        let bal = 0;
+        if (db.employeeLedger && db.employeeLedger[emp.id]) {
+            db.employeeLedger[emp.id].forEach(tx => {
+                bal += (tx.credit - tx.debit);
+            });
+        }
+        emp.balance = bal;
+    });
+
     tbody.innerHTML = db.employees.map(emp => {
         const bal = emp.balance || 0;
-        // اگر بالانس مثبت باشد یعنی ما بدهکاریم (قرمز)، اگر منفی یا صفر باشد سبز
-        const color = bal > 0 ? 'var(--danger)' : 'var(--success)';
-        
+        const color = bal >= 0 ? 'var(--success)' : 'var(--danger)'; // سبز=طلبکار، قرمز=بدهکار
+        const statusText = bal >= 0 ? 'طلبکار' : 'بدهکار';
+
         return `
             <tr>
                 <td style="font-weight:bold">${emp.name}</td>
                 <td>${emp.job}</td>
                 <td>${parseInt(emp.salary).toLocaleString()} ${emp.curr}</td>
-                <td style="color:${color}; font-weight:900; direction:ltr">${bal.toLocaleString()} ${emp.curr}</td>
+                <td style="color:${color}; font-weight:900; direction:ltr">
+                    ${bal.toLocaleString()} ${emp.curr}
+                    <div style="font-size:9px; opacity:0.7">${statusText}</div>
+                </td>
                 <td>
-                    <button class="btn btn-gold btn-sm" onclick="accrueSalary('${emp.id}')" title="ماه تمام شد، حقوق را به حسابش بزن">📅 سررسید حقوق</button>
-                    <button class="btn btn-blue btn-sm" onclick="paySalary('${emp.id}')" title="پرداخت پول نقد از صندوق">💰 پرداخت نقدی</button>
-                    <button class="btn btn-red btn-sm" onclick="deleteEmployee('${emp.id}')">🗑</button>
+                    <button class="btn btn-outline btn-sm" onclick="openEmpLedger('${emp.id}')">📜 صورت‌حساب</button>
+                    <button class="btn btn-blue btn-sm" onclick="paySalary('${emp.id}')">💰 پرداخت</button>
+                    <button class="btn btn-red btn-sm" onclick="deleteEmployee('${emp.id}')">❌</button>
                 </td>
             </tr>
         `;
@@ -4570,7 +4505,7 @@ function renderEmployees() {
     }
 }
 
-// 3. ذخیره کارمند جدید
+// 2. استخدام کارمند جدید
 async function saveNewEmployee() {
     const name = document.getElementById('empName').value;
     const job = document.getElementById('empJob').value;
@@ -4579,83 +4514,195 @@ async function saveNewEmployee() {
 
     if(!name || !salary) { alert("لطفاً نام و حقوق را وارد کنید"); return; }
 
-    const newEmp = {
-        id: Date.now().toString(),
-        name: name,
-        job: job,
-        salary: salary,
-        curr: curr,
-        balance: 0 // صفر یعنی بی‌حساب
-    };
+    const newId = Date.now().toString();
+    const newEmp = { id: newId, name: name, job: job, salary: salary, curr: curr, balance: 0 };
 
     if(!db.employees) db.employees = [];
     db.employees.push(newEmp);
+    
+    if(!db.employeeLedger) db.employeeLedger = {};
+    db.employeeLedger[newId] = [];
+
     await saveDB();
     closeModal('modalNewEmp');
     renderEmployees();
     alert("کارمند جدید استخدام شد.");
 }
 
-// 4. سررسید حقوق (افزایش بدهی ما به کارمند)
-async function accrueSalary(id) {
-    const emp = db.employees.find(e => e.id === id);
-    if(!emp) return;
+// 3. چک کردن خودکار حقوق سر ماه (این تابع در لود برنامه اجرا می‌شود)
+async function checkAutoMonthlySalary() {
+    if (!db.employees || db.employees.length === 0) return;
+    
+    const now = new Date();
+    // ساخت شناسه برای ماه جاری (مثلاً SALARY_2025_11) تا تکراری واریز نشود
+    const salaryMonthID = `SALARY_${now.getFullYear()}_${now.getMonth()}`; 
 
-    if(confirm(`آیا حقوق ماهانه برای ${emp.name} به مبلغ ${emp.salary} ${emp.curr} محاسبه شود؟\n(این مبلغ به طلب کارمند اضافه می‌شود)`)) {
-        emp.balance = (emp.balance || 0) + parseFloat(emp.salary);
+    let changesMade = false;
+
+    db.employees.forEach(emp => {
+        if (!db.employeeLedger) db.employeeLedger = {};
+        if (!db.employeeLedger[emp.id]) db.employeeLedger[emp.id] = [];
         
-        // ثبت در گزارشات
-        logTx('حقوق', `سررسید حقوق: ${emp.name}`, `Bedehi: ${emp.salary} ${emp.curr}`);
-        
+        // چک کن آیا حقوق این ماه قبلاً ثبت شده؟
+        const alreadyPaid = db.employeeLedger[emp.id].some(tx => tx.metaId === salaryMonthID);
+
+        if (!alreadyPaid) {
+            // ثبت حقوق (بستانکار شدن کارمند)
+            db.employeeLedger[emp.id].push({
+                id: Date.now() + Math.random(),
+                date: Date.now(),
+                type: 'credit', 
+                amount: parseFloat(emp.salary),
+                curr: emp.curr,
+                desc: `حقوق ماهانه خودکار - ${new Date().toLocaleDateString('fa-IR', {month:'long'})}`,
+                metaId: salaryMonthID
+            });
+            changesMade = true;
+        }
+    });
+
+    if (changesMade) {
         await saveDB();
-        renderEmployees();
+        renderEmployees(); // رفرش جدول
     }
 }
 
-// 5. پرداخت حقوق (کسر از صندوق + کسر از طلب کارمند)
+// 4. پرداخت دستی پول به کارمند (کسر از صندوق)
 async function paySalary(id) {
     const emp = db.employees.find(e => e.id === id);
     if(!emp) return;
     
-    // پیشنهاد مبلغ پرداخت (کل بدهی)
-    const amountToPay = prompt(`مبلغ پرداختی به ${emp.name} را وارد کنید:\n(موجودی طلب ایشان: ${emp.balance})`, emp.balance);
+    // محاسبه مانده فعلی
+    let currentBal = 0;
+    if(db.employeeLedger[id]) {
+        db.employeeLedger[id].forEach(t => currentBal += (t.credit - t.debit));
+    }
+
+    const amountToPay = prompt(`پرداخت نقد به ${emp.name}\n(طلب فعلی ایشان: ${currentBal.toLocaleString()} ${emp.curr})\nمبلغ را وارد کنید:`);
     
     if(amountToPay && parseFloat(amountToPay) > 0) {
         const amt = parseFloat(amountToPay);
+        const desc = prompt("بابت / توضیحات:", "دریافت مساعده / تسویه حساب");
         
         // چک کردن موجودی صندوق
         const currentCash = (db.cashBox[emp.curr] || 0) + (db.initialCapital[emp.curr] || 0);
-        if(currentCash < amt) {
-            alert(`موجودی صندوق ${emp.curr} کافی نیست!`);
-            return;
-        }
+        if(currentCash < amt) { alert(`موجودی صندوق ${emp.curr} کافی نیست!`); return; }
 
         // کسر از صندوق
         db.cashBox[emp.curr] -= amt;
         
-        // کسر از طلب کارمند
-        emp.balance -= amt;
-
-        // ثبت در گزارشات
-        logTx('حقوق', `پرداخت حقوق به ${emp.name}`, `Cash Out: ${amt} ${emp.curr}`, 'SALARY_PAY', { empId: id, amt: amt, curr: emp.curr });
+        // ثبت برداشت (بدهکار شدن کارمند)
+        if(!db.employeeLedger[id]) db.employeeLedger[id] = [];
+        db.employeeLedger[id].push({
+            id: Date.now(),
+            date: Date.now(),
+            type: 'debit',
+            amount: amt,
+            curr: emp.curr,
+            desc: desc || 'دریافت نقدی'
+        });
+        
+        // ثبت در لاگ سیستم
+        logTx('حقوق', `پرداخت به ${emp.name}`, `Cash Out: ${amt} ${emp.curr}`, 'SALARY_PAY', { empId: id, amt: amt });
 
         await saveDB();
         renderEmployees();
-        renderDashboard(); // برای آپدیت شدن موجودی صندوق در صفحه اصلی
+        renderDashboard(); // آپدیت صندوق در داشبورد
         alert("پرداخت انجام شد.");
     }
 }
 
-// 6. حذف کارمند
+// 5. باز کردن پنجره صورت‌حساب
+function openEmpLedger(id) {
+    const emp = db.employees.find(e => e.id === id);
+    if(!emp) return;
+
+    // تنظیم دکمه پرینت که آیدی درست را بگیرد
+    const printBtn = document.querySelector('#modalEmpLedger .btn-outline');
+    if(printBtn) printBtn.setAttribute('onclick', `printEmpLedger('${id}')`);
+
+    document.getElementById('ledgerEmpName').innerText = `${emp.name} (${emp.job})`;
+    const tbody = document.getElementById('empLedgerBody');
+    tbody.innerHTML = '';
+
+    const list = db.employeeLedger[id] || [];
+    list.sort((a,b) => a.date - b.date); // مرتب‌سازی تاریخی
+
+    let runningBalance = 0;
+    list.forEach(tx => {
+        if (tx.type === 'credit') runningBalance += tx.amount; // حقوق
+        else runningBalance -= tx.amount; // برداشت
+
+        const dateStr = new Date(tx.date).toLocaleDateString('fa-IR');
+        const debitDisplay = tx.type === 'debit' ? tx.amount.toLocaleString() : '-';
+        const creditDisplay = tx.type === 'credit' ? tx.amount.toLocaleString() : '-';
+        const colorClass = runningBalance >= 0 ? 'text-green' : 'text-red';
+
+        tbody.innerHTML += `
+            <tr>
+                <td style="font-size:12px">${dateStr}</td>
+                <td style="font-size:12px">${tx.desc}</td>
+                <td style="color:var(--danger); font-weight:bold">${debitDisplay}</td>
+                <td style="color:var(--success); font-weight:bold">${creditDisplay}</td>
+                <td class="${colorClass}" style="direction:ltr; font-weight:bold">${runningBalance.toLocaleString()}</td>
+                <td><button class="btn btn-red btn-sm" onclick="deleteEmpTx('${id}', ${tx.id})">❌</button></td>
+            </tr>
+        `;
+    });
+
+    document.getElementById('ledgerEmpBalance').innerText = `${runningBalance.toLocaleString()} ${emp.curr}`;
+    document.getElementById('ledgerEmpBalance').style.color = runningBalance >= 0 ? 'var(--gold-primary)' : 'var(--danger)';
+    
+    openModal('modalEmpLedger');
+}
+
+// 6. حذف تراکنش (در صورت اشتباه)
+async function deleteEmpTx(empId, txId) {
+    if(!confirm("آیا مطمئن هستید؟ (اگر پرداخت نقدی باشد، پول به صندوق برمی‌گردد)")) return;
+    const list = db.employeeLedger[empId];
+    const idx = list.findIndex(x => x.id === txId);
+    if(idx === -1) return;
+
+    const tx = list[idx];
+    if(tx.type === 'debit') { // اگر پول نقد بوده، برگردان به صندوق
+        db.cashBox[tx.curr] = (db.cashBox[tx.curr] || 0) + tx.amount;
+    }
+    list.splice(idx, 1);
+    await saveDB();
+    openEmpLedger(empId); // رفرش لیست
+    renderDashboard();
+    renderEmployees();
+}
+
+// 7. حذف کامل کارمند
 async function deleteEmployee(id) {
-    if(confirm("آیا مطمئن هستید؟ اگر کارمند حذف شود حساب و کتاب او پاک می‌شود.")) {
+    if(confirm("هشدار: تمام سوابق و صورت‌حساب این کارمند پاک می‌شود. ادامه می‌دهید؟")) {
         db.employees = db.employees.filter(e => e.id !== id);
+        delete db.employeeLedger[id];
         await saveDB();
         renderEmployees();
     }
 }
 
-// تغییر کوچک برای اینکه وقتی روی دکمه منو کلیک میکنی لیست بازسازی شود
+// 8. چاپ صورت‌حساب
+function printEmpLedger(empId) {
+    if(!empId) return;
+    const emp = db.employees.find(e => e.id === empId);
+    const list = db.employeeLedger[empId] || [];
+    let rows = '';
+    let balance = 0;
+    
+    list.forEach(tx => {
+        if(tx.type === 'credit') balance += tx.amount; else balance -= tx.amount;
+        rows += `<tr><td>${new Date(tx.date).toLocaleDateString('fa-IR')}</td><td>${tx.desc}</td><td>${tx.type==='debit'?tx.amount.toLocaleString():'-'}</td><td>${tx.type==='credit'?tx.amount.toLocaleString():'-'}</td><td dir="ltr">${balance.toLocaleString()}</td></tr>`;
+    });
+
+    const win = window.open('', '_blank', 'width=800,height=1000');
+    win.document.write(`<html><head><title>Statement</title><style>body{font-family:'Vazirmatn', Tahoma; direction:rtl; padding:20px;} table{width:100%; border-collapse:collapse; margin-top:20px;} th,td{border:1px solid #000; padding:8px; text-align:center;} .header{text-align:center; border-bottom:2px solid #000; padding-bottom:10px; margin-bottom:20px;}</style></head><body><div class="header"><h3>صورت‌حساب کارمند</h3><div>نام: <b>${emp.name}</b> (${emp.job})</div><div>تاریخ چاپ: ${new Date().toLocaleDateString('fa-IR')}</div></div><table><thead><tr style="background:#eee;"><th>تاریخ</th><th>شرح</th><th>برداشت</th><th>حقوق</th><th>مانده</th></tr></thead><tbody>${rows}</tbody></table><br><h3>مانده نهایی: ${balance.toLocaleString()} ${emp.curr}</h3></body></html>`);
+    win.document.close(); win.print();
+}
+
+// این قسمت باعث می‌شود وقتی روی منوی "کارمندان" کلیک می‌کنید، لیست رفرش شود
 const originalGo = window.go;
 window.go = function(pageId) {
     originalGo(pageId);
@@ -4692,15 +4739,12 @@ function clearLogo() {
         document.getElementById('logoUploader').value = '';
     }
 }
-// --- شروع کدهای اصلاحی سرمایه اولیه ---
 
-// ۱. تابع جدید برای ساختن کادرهای ورودی سرمایه
 function renderInitialCapitalInputs() {
     const container = document.getElementById('initialCapitalInputs');
     if (!container) return;
 
     let html = '';
-    // بررسی اینکه لیست ارزها موجود باشد
     if(!db.currencies) db.currencies = ['USD', 'AFN', 'EUR'];
     if(!db.initialCapital) db.initialCapital = {};
     if(!db.avgRates) db.avgRates = {};
@@ -4728,7 +4772,6 @@ function renderInitialCapitalInputs() {
     container.innerHTML = html;
 }
 
-// ۲. اصلاح تابع جابجایی تب‌ها (تا وقتی روی دکمه کلیک کردید، کادرها ظاهر شوند)
 window.switchSettingsTab = function(tabId, btn) {
     document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.settings-menu-btn').forEach(b => b.classList.remove('active'));
@@ -4738,22 +4781,16 @@ window.switchSettingsTab = function(tabId, btn) {
     
     if(btn) btn.classList.add('active');
 
-    // اگر وارد تب سرمایه شدیم، کادرها را بساز
     if (tabId === 'tab-capital') {
         renderInitialCapitalInputs();
     }
 };
 
-// تابع نمایش و محاسبه کمیشن‌ها (اصلاح شده: دسته‌بندی شهری + درصد واحد)
 function renderCommissionCalc() {
-    // 1. جمع‌آوری اطلاعات: شهر -> ارز -> مجموع کمیشن
-    // ساختار دیتا: { "Kabul": { "USD": 100, "AFN": 5000 }, "Herat": { ... } }
     let cityData = {};
-    
     db.hawalas.forEach(h => {
         if (h.comm && h.comm > 0) {
             const city = h.cityBook;
-            // استفاده از ارز کمیشن یا اگر نبود ارز خود حواله
             const curr = h.commCurr || h.curr;
             
             if (!cityData[city]) cityData[city] = {};
@@ -4764,13 +4801,9 @@ function renderCommissionCalc() {
     });
 
     const container = document.getElementById('commCalcBody');
-    // چون طراحی عوض شد، باید جدول قبلی را پاک کنیم و دیزاین جدید بسازیم
-    // اما چون در HTML شما <table> ثابت است، ما باید کل محتوای کارت را عوض کنیم یا ساختار جدول را تغییر دهیم.
-    // راه بهتر: جدول HTML را نادیده می‌گیریم و داخل کانتینر اصلی کارت، باکس‌های جداگانه می‌سازیم.
     
     const pageContainer = document.querySelector('#commissions .card');
     
-    // هدر کارت ثابت بماند، محتوا تغییر کند
     let htmlContent = `
         <div class="card-header">
             <span>محاسبه و تقسیم سود (به تفکیک شهر)</span>
@@ -4831,11 +4864,10 @@ function renderCommissionCalc() {
                     </thead>
                     <tbody>`;
         
-        // حلقه روی ارزهای آن شهر
         for (let curr in cityData[city]) {
             const total = cityData[city][curr];
             const safeCurrId = curr.replace(/\s+/g, '_');
-            // آیدی‌های منحصر به فرد برای هر سلول
+           
             const rowId = `${safeCityId}_${safeCurrId}`;
             
             htmlContent += `
@@ -4862,7 +4894,6 @@ function renderCommissionCalc() {
 
     pageContainer.innerHTML = htmlContent;
 
-    // اجرای محاسبه اولیه برای همه شهرها
     setTimeout(() => {
         for (let city in cityData) {
             updateCityCalc(city.replace(/\s+/g, '_'));
@@ -4870,19 +4901,15 @@ function renderCommissionCalc() {
     }, 100);
 }
 
-// تابع محاسبه‌گر جدید (یک شهر را می‌گیرد و تمام ارزهایش را آپدیت می‌کند)
 function updateCityCalc(cityId) {
-    // 1. گرفتن درصدهای آن شهر
     const pShare = parseFloat(document.getElementById(`pc_share_${cityId}`).value) || 0;
     const pAg = parseFloat(document.getElementById(`pc_ag_${cityId}`).value) || 0;
     const pTax = parseFloat(document.getElementById(`pc_tax_${cityId}`).value) || 0;
 
-    // 2. پیدا کردن ارزهای موجود در آن شهر
     const currString = document.getElementById(`currencies_${cityId}`).value;
     if (!currString) return;
     const currencies = currString.split(',');
 
-    // 3. محاسبه برای تک تک ارزها
     currencies.forEach(curr => {
         const safeCurr = curr.replace(/\s+/g, '_'); // اگر فاصله داشت
         const rowId = `${cityId}_${safeCurr}`;
@@ -4903,21 +4930,17 @@ function updateCommRow(key) {
     const row = document.getElementById(`row_${key}`);
     if(!row) return;
     
-    // گرفتن مبلغ کل
     const totalCell = row.querySelector('[data-total]');
     const total = parseFloat(totalCell.getAttribute('data-total')) || 0;
 
-    // گرفتن درصدها از کادرهای همان ردیف
     const pOff = parseFloat(document.getElementById(`p_off_${key}`).value) || 0;
     const pAg = parseFloat(document.getElementById(`p_ag_${key}`).value) || 0;
     const pTax = parseFloat(document.getElementById(`p_tax_${key}`).value) || 0;
 
-    // محاسبه
     const vOff = (total * pOff) / 100;
     const vAg = (total * pAg) / 100;
     const vTax = (total * pTax) / 100;
 
-    // نمایش نتیجه
     document.getElementById(`res_off_${key}`).innerText = vOff.toLocaleString(undefined, {maximumFractionDigits:1});
     document.getElementById(`res_ag_${key}`).innerText = vAg.toLocaleString(undefined, {maximumFractionDigits:1});
     document.getElementById(`res_tax_${key}`).innerText = vTax.toLocaleString(undefined, {maximumFractionDigits:1});
@@ -4938,7 +4961,6 @@ function openHawalaModal(type) {
         titleEl.style.borderColor = "#00e676";
     }
 
-    // منطق مخفی‌سازی منوی انتخاب گروه
     const hasGroupAccess = currentUser.perms.access_group_b || currentUser.perms.admin;
     const groupDiv = document.getElementById('divHGroup');
     if(groupDiv) {
@@ -4949,7 +4971,6 @@ function openHawalaModal(type) {
     setHawalaCustType('external');
     openModal('modalNewHawala');
 }
-// 2. تابع ذخیره تنظیمات API
 async function saveAPISettings() {
     if (!db.settings) db.settings = {};
     
@@ -4962,12 +4983,9 @@ async function saveAPISettings() {
     alert('تنظیمات API ذخیره شد. برای اعمال تغییرات، یک بار صفحه نرخ‌ها را باز و بسته کنید.');
 }
 
-// 3. تابع پر کردن فیلدها هنگام باز کردن تنظیمات
-// این خط را به تابع openSettings() موجود در کد وصل می‌کنیم یا همینجا اجرا می‌کنیم
 const originalOpenSettings = window.openSettings;
 window.openSettings = function() {
     originalOpenSettings(); // اجرای کد اصلی
-    // پر کردن فیلدها اگر قبلا ذخیره شده باشند
     if(db.settings) {
         if(db.settings.apiFiat) document.getElementById('setApiFiat').value = db.settings.apiFiat;
         if(db.settings.apiCrypto) document.getElementById('setApiCrypto').value = db.settings.apiCrypto;
@@ -4975,7 +4993,7 @@ window.openSettings = function() {
         if(db.settings.apiInterval) document.getElementById('setApiInterval').value = db.settings.apiInterval;
     }
 };
-// --- کد نهایی و پرسرعت (مخصوص دبی) ---
+
 async function fetchGlobalRates() {
     const lastUpdateEl = document.getElementById('lastUpdateRates');
     if(lastUpdateEl) {
@@ -4983,16 +5001,12 @@ async function fetchGlobalRates() {
         lastUpdateEl.style.color = "var(--text-muted)";
     }
 
-    // بخش 1: دریافت نرخ طلا و کریپتو از بایننس (Binance)
-    // این دقیق‌ترین و سریع‌ترین منبع برای شما در دبی است
     try {
-        // دریافت قیمت بیت‌کوین، اتریوم و طلا (PAXG معادل انس طلا است)
         const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbols=["BTCUSDT","ETHUSDT","PAXGUSDT"]');
         if (!res.ok) throw new Error("Binance Error");
         
         const data = await res.json();
         
-        // پیدا کردن قیمت‌ها از لیست دریافتی
         const btcObj = data.find(x => x.symbol === 'BTCUSDT');
         const ethObj = data.find(x => x.symbol === 'ETHUSDT');
         const goldObj = data.find(x => x.symbol === 'PAXGUSDT');
@@ -5001,7 +5015,6 @@ async function fetchGlobalRates() {
         const ethPrice = ethObj ? parseFloat(ethObj.price) : 0;
         const goldPrice = goldObj ? parseFloat(goldObj.price) : 0;
 
-        // نمایش در باکس‌ها
         renderCryptoRates({
             bitcoin: { usd: btcPrice },
             ethereum: { usd: ethPrice }
@@ -5017,8 +5030,6 @@ async function fetchGlobalRates() {
         if(gBox) gBox.innerHTML = `<div class="stat-box" style="color:red">خطا در اتصال</div>`;
     }
 
-    // بخش 2: دریافت ارزهای ملی (فیات) از ExchangeRate-API
-    // این API بسیار سبک و سریع است
     try {
         const fiatRes = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
         if (!fiatRes.ok) throw new Error("Fiat Error");
@@ -5026,7 +5037,6 @@ async function fetchGlobalRates() {
         const fiatData = await fiatRes.json();
         const r = fiatData.rates;
         
-        // لیست ارزهایی که نیاز دارید
         const targetRates = {
             'EUR': r.EUR,
             'GBP': r.GBP,
@@ -5037,15 +5047,15 @@ async function fetchGlobalRates() {
             'CNY': r.CNY,
             'JPY': r.JPY,
             'TRY': r.TRY,
-            'AED': r.AED, // درهم امارات
-            'SAR': r.SAR, // ریال سعودی
-            'AFN': r.AFN, // افغانی
-            'IRR': r.IRR  // ریال ایران
+            'AED': r.AED, 
+            'SAR': r.SAR, 
+            'AFN': r.AFN, 
+            'IRR': r.IRR  
         };
 
         renderFiatRates(targetRates);
 
-        // اگر همه چیز درست بود، ساعت را آپدیت کن
+        
         if(lastUpdateEl) {
             const time = new Date().toLocaleTimeString('en-US');
             lastUpdateEl.innerText = `Live Update: ${time}`;
@@ -5076,8 +5086,7 @@ function renderCard(containerId, key, title, price, symbol = '') {
     }
     previousRates[key] = displayPrice;
 
-    // بررسی اینکه آیا کارت قبلا وجود دارد یا باید ساخته شود
-    // برای سادگی فعلا کل HTML را بازنویسی میکنیم در توابع والد
+
     return `
     <div class="rate-card">
         <span class="rate-title">${title}</span>
@@ -5126,7 +5135,6 @@ function renderCommodities(goldPrice) {
     box.innerHTML = html;
 }
 
-// --- پایان کدهای جدید --- //
 </script>
 </body>
 </html>
