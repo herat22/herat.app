@@ -3658,31 +3658,22 @@ async function submitExchange() {
 
     if (!db.avgRates) db.avgRates = {};
     let profit = 0; 
-    let effectiveRate = (baseAmt > 0) ? (quoteAmt / baseAmt) : 0; // نرخ موثر این معامله
+    let effectiveRate = (baseAmt > 0) ? (quoteAmt / baseAmt) : 0;
 
-    // --- اگر داریم می‌فروشیم (SELL) ---
-    // باید سود شناسایی کنیم
+    // --- محاسبات سود و میانگین (همان کدهای قبلی شما) ---
     if (fxDirection === 'Sell') {
         const avgBuyRate = db.avgRates[baseCurr] || 0;
-        
         if (avgBuyRate > 0) {
-            // محاسبه قیمت تمام شده کالایی که داریم می‌فروشیم
             let costOfSoldItems = 0;
             if (avgBuyRate > 2) costOfSoldItems = baseAmt / avgBuyRate;
             else costOfSoldItems = baseAmt * avgBuyRate;
-
             profit = quoteAmt - costOfSoldItems;
         } else {
-            // اگر نرخ خرید نداشتیم، سود را صفر در نظر می‌گیریم (یا کاربر دستی وارد کرده باشد)
-            // اینجا فرض می‌کنیم سود صفر است تا سیستم بهم نریزد
             profit = 0;
         }
     }
 
-    // --- اگر داریم می‌خریم (BUY) ---
-    // باید نرخ میانگین را آپدیت کنیم (میانگین وزنی)
     if (fxDirection === 'Buy') {
-        // 1. موجودی فعلی و ارزش فعلی
         const currentQty = (db.cashBox[baseCurr] || 0) + (db.initialCapital[baseCurr] || 0);
         const currentRate = db.avgRates[baseCurr] || 0;
         
@@ -3691,56 +3682,17 @@ async function submitExchange() {
             if(currentRate > 2) currentTotalValue = currentQty / currentRate;
             else currentTotalValue = currentQty * currentRate;
         }
-
-        // 2. ارزش خرید جدید
-        const newTradeValue = quoteAmt; // پولی که بابتش دادیم
-        
-        // 3. موجودی جدید
+        const newTradeValue = quoteAmt; 
         const newTotalQty = currentQty + baseAmt;
 
-        // 4. محاسبه نرخ میانگین جدید
         if (newTotalQty > 0) {
             const newTotalValue = currentTotalValue + newTradeValue;
-            
-            // فرمول معکوس برای ارزهای بزرگ (مثل تومان) و مستقیم برای ارزهای کوچک (مثل یورو)
-            // اگر نرخ معامله فعلی بالای 2 است (یعنی سیستم تومانی/ریالی)، میانگین را هم همانطور حساب کن
-            // نرخ = مقدار / قیمت (در سیستم تومانی) یا قیمت / مقدار (در سیستم دلاری)
-            
-            // تشخیص سیستم نرخ‌دهی بر اساس معامله جاری
-            // اگر الان داریم 100 دلار میخریم به 6000000 تومان -> نرخ 60000 است
-            // بهتر است استاندارد کنیم: همیشه ارزش 1 واحد را نگه داریم
-            
-            /* روش ساده و مطمئن: */
             let newAvgRate = 0;
-            
-            // چک میکنیم نرخ ورودی کاربر چه شکلی بوده (ضرب یا تقسیم)
-            // اما برای ذخیره در دیتابیس، بهتر است نرخ را جوری ذخیره کنیم که در محاسبه سود استفاده کردیم
-            
             if (fxOperator === 'divide' || (quoteAmt > baseAmt * 2)) {
-                 // سیستم تومانی: نرخ = ارزش کل / مقدار ارز (معمولا) اما اینجا نرخ تقسیم است
-                 // بیایید ساده کنیم: ما ارزش کل (newTotalValue) را داریم و مقدار کل (newTotalQty)
-                 // اگر سیستم تومانی است (نرخ بالا): میانگین = newTotalValue / newTotalQty (این میشه قیمت هر واحد)
-                 // اما ما در این کد نرخ را "مقدار بر قیمت" یا "قیمت بر مقدار" داریم؟
-                 
-                 // فرض: در تومان ما نرخ را مثلا 60000 وارد میکنیم. یعنی 1 دلار = 60000
-                 // پس ارزش کل به تومان = مقدار دلار * 60000
-                 // پس نرخ میانگین = ارزش کل تومانی / مقدار کل دلاری
-                 
                  newAvgRate = newTotalValue / newTotalQty; 
-                 // اگر در فرمول های بالا از تقسیم استفاده کردیم (Cost = Amt / Rate)، اینجا باید معکوس کنیم؟
-                 // خیر، در فرمول بالا گفتیم if(rate > 2) Cost = Amt * Rate (درستش این بود) یا Amt / Rate?
-                 
-                 // اصلاح فرمول بالا برای هماهنگی:
-                 // اگر نرخ > 2 (تومان): Cost = Base * Rate (چون 100 دلار * 60000 = 6 میلیون هزینه)
-                 // پس فرمول costOfSoldItems در بالا باید Base * Rate باشد برای تومان.
-                 // بگذارید کد را اصلاح کنم که با منطق بازار ایران (ضرب در نرخ) کار کند.
-                 
-                 newAvgRate = newTotalValue / newTotalQty;
             } else {
-                 // سیستم برابری (یورو به دلار): نرخ = ارزش / مقدار
                  newAvgRate = newTotalValue / newTotalQty;
             }
-            
             db.avgRates[baseCurr] = newAvgRate;
         }
     }
@@ -3754,10 +3706,6 @@ async function submitExchange() {
         isInternal: false 
     };
 
-    // ... (بقیه کدهای مربوط به مشتری داخلی و خارجی که قبلاً داشتید بدون تغییر می‌ماند) ...
-    // فقط بخش محاسبات سود و میانگین در بالا جایگزین شد.
-    
-    // ادامه کد استاندارد برای تکمیل تابع:
     let actionType = fxDirection === 'Buy' ? 'خرید' : 'فروش';
     let logDetail = "";
     
@@ -3767,15 +3715,16 @@ async function submitExchange() {
         if (fxDirection === 'Buy') {
             db.accounts[cust].push({ id: id1, date: Date.now(), desc: `فروش ارز به صرافی`, curr: baseCurr, debit: baseAmt, credit: 0, type: 'debit' });
             db.accounts[cust].push({ id: id2, date: Date.now(), desc: `دریافت معادل`, curr: quoteCurr, debit: 0, credit: quoteAmt, type: 'credit' });
-            db.cashBox[baseCurr] = (db.cashBox[baseCurr] || 0) + baseAmt; // اضافه شدن ارز به صندوق
+            db.cashBox[baseCurr] = (db.cashBox[baseCurr] || 0) + baseAmt; 
         } else {
             db.accounts[cust].push({ id: id1, date: Date.now(), desc: `خرید ارز از صرافی`, curr: baseCurr, debit: 0, credit: baseAmt, type: 'credit' });
             db.accounts[cust].push({ id: id2, date: Date.now(), desc: `پرداخت معادل`, curr: quoteCurr, debit: quoteAmt, credit: 0, type: 'debit' });
-            db.cashBox[baseCurr] = (db.cashBox[baseCurr] || 0) - baseAmt; // کسر ارز از صندوق
+            db.cashBox[baseCurr] = (db.cashBox[baseCurr] || 0) - baseAmt; 
         }
         logData.isInternal = true; logData.cust = cust; logData.accId1 = id1; logData.accId2 = id2;
         logDetail = `${actionType} (حساب): ${baseAmt} ${baseCurr} - مشتری: ${cust}`;
     } else {
+        // دریافت نام مشتری آزاد برای لاگ
         const exName = document.getElementById('exExtName').value || "نقدی";
         if (fxDirection === 'Buy') { 
             db.cashBox[baseCurr] = (db.cashBox[baseCurr] || 0) + baseAmt; 
@@ -3784,13 +3733,19 @@ async function submitExchange() {
             db.cashBox[baseCurr] = (db.cashBox[baseCurr] || 0) - baseAmt; 
             db.cashBox[quoteCurr] = (db.cashBox[quoteCurr] || 0) + quoteAmt; 
         }
-        logDetail = `${actionType}: ${baseAmt} ${baseCurr} (نرخ: ${db.avgRates[baseCurr]?.toFixed(1) || '-'}) | سود: ${profit.toLocaleString()}`;
+        logDetail = `${actionType}: ${baseAmt} ${baseCurr} (نرخ: ${db.avgRates[baseCurr]?.toFixed(1) || '-'}) | مشتری: ${exName}`;
     }
 
     logTx('صرافی', logDetail, `${quoteAmt} ${quoteCurr}`, 'EXCHANGE', logData);
     await saveDB(); 
     renderDashboard(); 
-    alert('انجام شد.');
+    
+    // *** تغییر مهم: چاپ خودکار رسید ***
+    printExchangeReceipt();
+    
+    // بعد از پرینت، فرم را خالی میکنیم (اختیاری)
+    // document.getElementById('fxBaseAmt').value = '';
+    // document.getElementById('fxQuoteAmt').value = '';
 }
 
 function printHawalaList() {
@@ -4135,12 +4090,154 @@ function printTodayJournal() {
 }
 
 function printExchangeReceipt() {
-    const baseAmt = document.getElementById('fxBaseAmt').value; const quoteAmt = document.getElementById('fxQuoteAmt').value; const baseCurr = document.getElementById('fxBaseCurr').value; const quoteCurr = document.getElementById('fxQuoteCurr').value; const rate = document.getElementById('fxRate').value; const desc = document.getElementById('exDesc').value || '---'; const type = fxDirection === 'Buy' ? 'خرید ارز (Purchase)' : 'فروش ارز (Sale)';
-    const win = window.open('', '_blank', 'width=500,height=600');
-    win.document.write(`<html><head><title>Exchange Receipt</title><style>body{font-family:'Vazirmatn',tahoma;direction:rtl;padding:10px;text-align:center}.box{border:2px dashed #000;padding:20px;margin:0 auto;width:90%}.row{display:flex;justify-content:space-between;border-bottom:1px dotted #ccc;padding:5px 0}.val{font-weight:bold}</style></head><body>${getPrintHeaderHTML()}<div class="box"><h3>رسید معامله ارزی (Deal Ticket)</h3><div class="row"><span>تاریخ:</span><span class="val">${new Date().toLocaleDateString('fa-IR')}</span></div><div class="row"><span>نوع عملیات:</span><span class="val">${type}</span></div><div class="row"><span>ارز پایه (Base):</span><span class="val" dir="ltr">${baseAmt} ${baseCurr}</span></div><div class="row"><span>ارز متقابل (Quote):</span><span class="val" dir="ltr">${quoteAmt} ${quoteCurr}</span></div><div class="row"><span>نرخ (Rate):</span><span class="val">${rate}</span></div><div class="row"><span>توضیحات:</span><span class="val">${desc}</span></div><br><p>با تشکر از انتخاب شما</p></div></body></html>`);
-    win.document.close(); win.print();
-}
+    // 1. دریافت اطلاعات معامله
+    const baseAmt = document.getElementById('fxBaseAmt').value;
+    const quoteAmt = document.getElementById('fxQuoteAmt').value;
+    const baseCurr = document.getElementById('fxBaseCurr').value;
+    const quoteCurr = document.getElementById('fxQuoteCurr').value;
+    const rate = document.getElementById('fxRate').value;
+    const desc = document.getElementById('exDesc').value || '';
+    
+    // تشخیص نوع معامله
+    const type = fxDirection === 'Buy' ? 'خرید ارز (Purchase)' : 'فروش ارز (Sale)';
+    
+    // 2. دریافت کامل مشخصات مشتری
+    let custName = "";
+    let custFather = "";
+    let custPhone = "";
+    let custID = "";
+    let custTypeLabel = "";
 
+    if (exType === 'internal') {
+        // --- مشتری حساب‌دار ---
+        custName = document.getElementById('exCustomer').value;
+        custTypeLabel = "(حساب‌دار)";
+        // تلاش برای پیدا کردن شماره تلفن از دیتابیس مشتریان
+        const custObj = db.customers.find(c => c.name === custName);
+        if (custObj && custObj.phone) custPhone = custObj.phone;
+
+    } else {
+        // --- مشتری نقدی (آزاد) ---
+        custName = document.getElementById('exExtName').value || "مشتری نقدی";
+        custFather = document.getElementById('exExtFather').value;
+        custPhone = document.getElementById('exExtPhone').value;
+        custID = document.getElementById('exExtID').value;
+        custTypeLabel = "(نقدی)";
+    }
+
+    // 3. باز کردن پنجره چاپ
+    const win = window.open('', '_blank', 'width=400,height=600');
+    
+    win.document.write(`
+    <html>
+    <head>
+        <title>Receipt</title>
+        <style>
+            @page { size: 80mm auto; margin: 0; }
+            body {
+                font-family: 'Vazirmatn', 'Tahoma', sans-serif;
+                direction: rtl;
+                margin: 0;
+                padding: 5px 10px;
+                width: 72mm; /* عرض استاندارد فیش */
+                font-size: 11px;
+                color: #000;
+            }
+            .header { text-align: center; border-bottom: 2px dashed #000; padding-bottom: 5px; margin-bottom: 5px; }
+            .header h2 { margin: 5px 0; font-size: 14px; font-weight: 900; }
+            
+            /* استایل بخش مشخصات مشتری */
+            .customer-box {
+                border: 1px solid #999;
+                border-radius: 5px;
+                padding: 5px;
+                margin-bottom: 8px;
+                background: #f9f9f9;
+            }
+            .info-row { display: flex; justify-content: space-between; margin-bottom: 3px; }
+            .lbl { color: #555; font-size: 10px; }
+            .val { font-weight: bold; font-size: 11px; }
+            
+            .divider { border-top: 1px dashed #000; margin: 8px 0; }
+            
+            .total-box { 
+                font-size: 14px; font-weight: 900; text-align: center; 
+                border: 2px solid #000; padding: 5px; border-radius: 5px; margin-top: 5px; 
+            }
+            .footer { text-align: center; font-size: 9px; margin-top: 15px; }
+            img { max-width: 60px; }
+        </style>
+    </head>
+    <body>
+        ${getPrintHeaderHTML()} <div class="header">
+            <h2>رسید ${type}</h2>
+            <div style="font-size:10px">${new Date().toLocaleDateString('fa-IR')} - ${new Date().toLocaleTimeString('fa-IR')}</div>
+        </div>
+
+        <div class="customer-box">
+            <div style="text-align:center; font-weight:bold; border-bottom:1px solid #ccc; margin-bottom:4px;">مشخصات مشتری ${custTypeLabel}</div>
+            
+            <div class="info-row">
+                <span class="lbl">نام:</span>
+                <span class="val">${custName}</span>
+            </div>
+            
+            ${custFather ? `
+            <div class="info-row">
+                <span class="lbl">نام پدر:</span>
+                <span class="val">${custFather}</span>
+            </div>` : ''}
+
+            ${custID ? `
+            <div class="info-row">
+                <span class="lbl">تذکره/ID:</span>
+                <span class="val">${custID}</span>
+            </div>` : ''}
+
+            ${custPhone ? `
+            <div class="info-row">
+                <span class="lbl">تلفن:</span>
+                <span class="val" dir="ltr">${custPhone}</span>
+            </div>` : ''}
+        </div>
+        
+        <div class="divider"></div>
+
+        <div class="info-row">
+            <span class="lbl">مبلغ پایه:</span>
+            <span class="val" dir="ltr">${parseFloat(baseAmt).toLocaleString()} ${baseCurr}</span>
+        </div>
+        <div class="info-row">
+            <span class="lbl">نرخ (Rate):</span>
+            <span class="val">${rate}</span>
+        </div>
+
+        <div class="total-box">
+            <div style="font-size:10px; font-weight:normal">مبلغ نهایی (Total)</div>
+            <div dir="ltr">${parseFloat(quoteAmt).toLocaleString()} ${quoteCurr}</div>
+        </div>
+
+        ${desc ? `<div class="divider"></div><div style="font-size:10px"><b>توضیحات:</b> ${desc}</div>` : ''}
+
+        <div class="footer">
+            <div style="display:flex; justify-content:space-between; margin-bottom:15px; margin-top:10px;">
+                <span>امضاء مشتری</span>
+                <span>مهر و امضاء صرافی</span>
+            </div>
+            <p>از اعتماد شما سپاسگزاریم</p>
+        </div>
+    </body>
+    </html>
+    `);
+    
+    win.document.close();
+    win.focus();
+    
+    setTimeout(() => { 
+        win.print(); 
+        // win.close(); 
+    }, 500);
+}
 function printCryptoFx() {
     const t = document.getElementById('cryptoTxType').value === 'Buy' ? 'خرید (Buy)' : 'فروش (Sell)'; const n = document.getElementById('cryptoName').value; const v = document.getElementById('cryptoAmt').value; const fc = document.getElementById('cryptoCurr').value; const fa = document.getElementById('fiatAmt').value; const desc = document.getElementById('cryptoDesc').value || '---';
     const win = window.open('', '_blank', 'width=500,height=600');
