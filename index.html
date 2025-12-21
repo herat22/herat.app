@@ -1493,11 +1493,14 @@ html[dir="ltr"] .submenu {
     <div class="card">
         <div class="card-header">
             <span>مدیریت کارمندان و حقوق و دستمزد (HRM)</span>
-            <button class="btn btn-green" onclick="openModal('modalNewEmp')">➕ استخدام کارمند جدید</button>
+            <div style="display:flex; gap:10px">
+                <button class="btn btn-gold" onclick="applyMonthlySalaries()">💰 واریز حقوق ماهانه (دستی)</button>
+                <button class="btn btn-green" onclick="openModal('modalNewEmp')">➕ استخدام کارمند جدید</button>
+            </div>
         </div>
         
         <div class="stat-box" style="margin-bottom:15px; text-align:right; background:rgba(212,175,55,0.05); border:1px dashed var(--gold-border)">
-            <span style="font-size:12px; color:var(--text-muted)">* سیستم به‌صورت خودکار در پایان هر ماه، حقوق کارمندان فعال را محاسبه و به حساب‌شان منظور (Credited) می‌کند.</span>
+            <span style="font-size:12px; color:var(--text-muted)">* جهت واریز حقوق این ماه، روی دکمه "واریز حقوق ماهانه" کلیک کنید. سیستم بررسی می‌کند که حقوق تکراری واریز نشود.</span>
         </div>
 
         <div class="table-container">
@@ -1678,7 +1681,7 @@ const TRANSLATIONS = {
         login_btn: "ورود به سیستم (Enter)",
         login_error: "اطلاعات اشتباه است",
         loading_db: "در حال بارگذاری پایگاه داده امنیتی...",
-        nav_dashboard: "📊 داشبورد (F1)",
+        nav_dashboard: "📊 نما مرکزی حساب   (F1)",
         nav_hawala: "✈️ حواله‌جات (F2)",
         nav_accounts: "👥 حساب مشتریان (F3)",
         nav_tt: "🌐 انتقال ارز (TT) (F6)",
@@ -2472,9 +2475,7 @@ async function loadDB() {
             }]; 
         }
 
-        // === خط مهم جدید: ایجاد دفتر حساب کارمندان ===
         if (!db.employeeLedger) db.employeeLedger = {};
-        // ===========================================
 
         fxProfit = db.fxProfit || {};
         if (!db.settings) db.settings = { printHeader: false };
@@ -2492,10 +2493,7 @@ async function loadDB() {
 
         await dbAdapter.saveAll(db);
         
-        // فراخوانی چک کردن حقوق اتوماتیک
-        if(typeof checkAutoMonthlySalary === 'function') {
-            checkAutoMonthlySalary();
-        }
+        // *** آن بخش اتوماتیک که اینجا بود کامل حذف شد ***
 
     } catch (e) { console.error("DB Load Error", e); alert("خطا در بارگذاری پایگاه داده"); }
 }
@@ -4613,7 +4611,7 @@ async function saveNewEmployee() {
     const job = document.getElementById('empJob').value;
     const salary = parseFloat(document.getElementById('empSalary').value);
     const curr = document.getElementById('empCurr').value;
-    const joinDate = document.getElementById('empJoinDate').value; // YYYY-MM-DD
+    const joinDate = document.getElementById('empJoinDate').value; 
 
     if(!name || !salary) { alert("نام و حقوق الزامی است"); return; }
 
@@ -4624,89 +4622,69 @@ async function saveNewEmployee() {
         job: job, 
         salary: salary, 
         curr: curr, 
-        joinDate: joinDate || new Date().toISOString().split('T')[0], // اگر وارد نشد، امروز
+        joinDate: joinDate || new Date().toISOString().split('T')[0], 
         status: 'Active'
     };
 
     if(!db.employees) db.employees = [];
     db.employees.push(newEmp);
     
-    // ایجاد دفتر حساب خالی
     if(!db.employeeLedger) db.employeeLedger = {};
     db.employeeLedger[newId] = [];
 
     await saveDB();
     closeModal('modalNewEmp');
-    
-    // چک کردن فوری حقوق (شاید تاریخ استخدام مال قبل باشد)
-    await checkAutoMonthlySalary();
-    
     renderEmployees();
     alert("کارمند با موفقیت استخدام شد.");
 }
 
-// 3. سیستم هوشمند محاسبه حقوق سر ماه (Auto Accrual)
-// این تابع باید در ابتدای برنامه (init) صدا زده شود.
-async function checkAutoMonthlySalary() {
-    if (!db.employees || db.employees.length === 0) return;
-    
-    let changesMade = false;
+// 3. تابع جدید: واریز دستی حقوق ماهانه با دکمه
+async function applyMonthlySalaries() {
+    if (!db.employees || db.employees.length === 0) { alert("هیچ کارمندی ثبت نشده است."); return; }
+
     const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth(); // 0-11
+    // نام ماه جاری به فارسی
+    const currentMonthName = now.toLocaleDateString('fa-IR', { year: 'numeric', month: 'long' });
+    
+    // ساخت شناسه یکتا برای ماه جاری (مثلا SAL_2025_11) جهت جلوگیری از واریز تکراری
+    const salaryMetaId = `SAL_${now.getFullYear()}_${now.getMonth()}`;
+
+    if(!confirm(`آیا مطمئن هستید که می‌خواهید حقوق ماه جاری (${currentMonthName}) را برای تمام کارمندان فعال محاسبه و به حسابشان منظور کنید؟`)) return;
+
+    let count = 0;
+    let alreadyPaidCount = 0;
 
     db.employees.forEach(emp => {
-        if(emp.status !== 'Active') return;
+        if(emp.status !== 'Active') return; // فقط فعال‌ها
         if (!db.employeeLedger[emp.id]) db.employeeLedger[emp.id] = [];
 
-        // تاریخ شروع را بررسی می‌کنیم
-        const startDate = new Date(emp.joinDate);
-        
-        // حلقه از تاریخ شروع تا امروز (برای ماه‌های گذشته هم حقوق رد می‌کند اگر سیستم خاموش بوده)
-        let loopDate = new Date(startDate);
-        // تنظیم به اول ماه شروع
-        loopDate.setDate(1); 
+        // بررسی اینکه آیا قبلاً حقوق این ماه را گرفته یا نه
+        const alreadyPaid = db.employeeLedger[emp.id].some(tx => tx.metaId === salaryMetaId);
 
-        while (loopDate <= now) {
-            // ساخت شناسه یکتا برای هر ماه: SAL_ID_YEAR_MONTH
-            // مثال: SAL_12345_2025_11 (برای دسامبر)
-            const salaryMetaId = `SAL_${emp.id}_${loopDate.getFullYear()}_${loopDate.getMonth()}`;
-            
-            // آیا حقوق این ماه قبلاً رد شده؟
-            const alreadyAccrued = db.employeeLedger[emp.id].some(tx => tx.metaId === salaryMetaId);
-
-            // شرط: اگر حقوق رد نشده AND ماهِ حلقه، ماهِ آینده نباشد (یعنی ماه کامل شده یا جاری است)
-            // نکته: معمولا حقوق سر برج رد می‌شود. اینجا فرض می‌کنیم اگر وارد ماه جدید شدیم، حقوق ماه قبل باید واریز شود.
-            // اما برای سادگی: حقوق هر ماه، در همان ماه (مثلاً روز اول) یا به محض ورود به سیستم در آن ماه ثبت می‌شود.
-            
-            if (!alreadyAccrued) {
-                // نام ماه به فارسی یا انگلیسی
-                const monthName = loopDate.toLocaleDateString(currentLang==='fa'?'fa-IR':'en-US', { year:'numeric', month:'long' });
-                
-                db.employeeLedger[emp.id].push({
-                    id: Date.now() + Math.random(),
-                    date: loopDate.getTime(), // تاریخ ثبت را اول آن ماه می‌زنیم یا زمان فعلی
-                    type: 'credit', // بستانکار شدن کارمند
-                    amount: parseFloat(emp.salary),
-                    curr: emp.curr,
-                    desc: `حقوق ماهانه: ${monthName}`,
-                    metaId: salaryMetaId // کلید جلوگیری از تکرار
-                });
-                changesMade = true;
-            }
-
-            // رفتن به ماه بعد
-            loopDate.setMonth(loopDate.getMonth() + 1);
+        if (!alreadyPaid) {
+            db.employeeLedger[emp.id].push({
+                id: Date.now() + Math.random(),
+                date: Date.now(),
+                type: 'credit', // بستانکار شدن کارمند (طلب)
+                amount: parseFloat(emp.salary),
+                curr: emp.curr,
+                desc: `حقوق ماهانه: ${currentMonthName}`,
+                metaId: salaryMetaId 
+            });
+            count++;
+        } else {
+            alreadyPaidCount++;
         }
     });
 
-    if (changesMade) {
+    if (count > 0) {
         await saveDB();
-        console.log("Auto Salary Check: Updated.");
+        renderEmployees();
+        alert(`عملیات موفق: حقوق ${count} کارمند به حسابشان واریز شد.`);
+    } else {
+        alert(`حقوق تمام کارمندان (${alreadyPaidCount} نفر) برای ماه ${currentMonthName} قبلاً واریز شده است و نیازی به عملیات مجدد نیست.`);
     }
 }
-
-// 4. باز کردن صورت‌حساب (Ledger)
 function openEmpLedger(id) {
     const emp = db.employees.find(e => e.id === id);
     if(!emp) return;
