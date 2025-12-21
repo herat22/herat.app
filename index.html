@@ -925,60 +925,7 @@ html[dir="ltr"] .submenu {
         </div>
     </div>
 </div>
-<div id="employees" class="page admin-only-view">
-    <div class="card">
-        <div class="card-header">
-            <span>مدیریت کارمندان و حقوق و دستمزد</span>
-            <button class="btn btn-green" onclick="openModal('modalNewEmp')">➕ استخدام کارمند جدید</button>
-        </div>
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>نام کارمند</th>
-                        <th>سمت / وظیفه</th>
-                        <th>حقوق توافقی (ماهانه)</th>
-                        <th>وضعیت حساب (طلب کارمند)</th>
-                        <th style="min-width: 250px;">عملیات حقوق</th>
-                    </tr>
-                </thead>
-                <tbody id="employeeBody"></tbody>
-            </table>
-        </div>
-        <p style="font-size:12px; color:var(--text-muted); margin-top:10px;">
-            * <b>سررسید حقوق:</b> یعنی ماه تمام شده و حقوق به طلب کارمند اضافه می‌شود (پولی پرداخت نمی‌شود).<br>
-            * <b>پرداخت نقدی:</b> یعنی پول نقد از صندوق به کارمند داده می‌شود و حسابش تسویه می‌شود.
-        </p>
-    </div>
-</div>
 
-<div id="modalNewEmp" class="modal">
-    <div class="modal-content" style="max-width:400px; border: 2px solid var(--gold-primary);">
-        <span class="close-icon" onclick="closeModal('modalNewEmp')">&times;</span>
-        <div class="card-header">استخدام کارمند جدید</div>
-        
-        <label class="label">نام و نام خانوادگی</label>
-        <input id="empName" class="input" placeholder="مثلاً: احمد رضایی">
-        
-        <label class="label">سمت / شغل</label>
-        <input id="empJob" class="input" placeholder="مثلاً: آبدارچی، حسابدار...">
-        
-        <div class="grid-2">
-            <div>
-                <label class="label">مبلغ حقوق ماهانه</label>
-                <input type="number" id="empSalary" class="input" placeholder="0">
-            </div>
-            <div>
-                <label class="label">ارز حقوق</label>
-                <select id="empCurr" class="input"></select>
-            </div>
-        </div>
-
-        <button class="btn btn-green" style="width:100%" onclick="saveNewEmployee()">
-            ثبت کارمند (F10)
-        </button>
-    </div>
-</div>
 <div id="commissions" class="page admin-only-view">
     <div class="card">
         <div class="card-header">
@@ -1542,37 +1489,103 @@ html[dir="ltr"] .submenu {
         </div>
     </div>
 </div>
-<div id="modalEmpLedger" class="modal">
-    <div class="modal-content" style="max-width:800px; height:90vh; display:flex; flex-direction:column;">
-        <span class="close-icon" onclick="closeModal('modalEmpLedger')">&times;</span>
+<div id="employees" class="page admin-only-view">
+    <div class="card">
         <div class="card-header">
-            <span>صورت‌حساب کارمند: </span>
-            <span id="ledgerEmpName" style="color:var(--gold-primary)"></span>
+            <span>مدیریت کارمندان و حقوق و دستمزد (HRM)</span>
+            <button class="btn btn-green" onclick="openModal('modalNewEmp')">➕ استخدام کارمند جدید</button>
         </div>
-        <div style="background:rgba(212,175,55,0.1); padding:10px; border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-            <span>مانده قابل پرداخت:</span>
-            <span id="ledgerEmpBalance" style="font-size:18px; font-weight:900; direction:ltr">0</span>
+        
+        <div class="stat-box" style="margin-bottom:15px; text-align:right; background:rgba(212,175,55,0.05); border:1px dashed var(--gold-border)">
+            <span style="font-size:12px; color:var(--text-muted)">* سیستم به‌صورت خودکار در پایان هر ماه، حقوق کارمندان فعال را محاسبه و به حساب‌شان منظور (Credited) می‌کند.</span>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>نام کارمند</th>
+                        <th>سمت / تاریخ شروع</th>
+                        <th>حقوق پایه (ماهانه)</th>
+                        <th>وضعیت حساب (مانده)</th>
+                        <th style="min-width: 280px;">عملیات</th>
+                    </tr>
+                </thead>
+                <tbody id="employeeBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="modalNewEmp" class="modal">
+    <div class="modal-content" style="max-width:400px; border: 2px solid var(--gold-primary);">
+        <span class="close-icon" onclick="closeModal('modalNewEmp')">&times;</span>
+        <div class="card-header">استخدام کارمند جدید</div>
+        
+        <label class="label">نام و نام خانوادگی</label>
+        <input id="empName" class="input" placeholder="مثلاً: احمد رضایی">
+        
+        <label class="label">سمت / شغل</label>
+        <input id="empJob" class="input" placeholder="مثلاً: حسابدار">
+        
+        <label class="label">تاریخ شروع به کار (جهت محاسبه حقوق)</label>
+        <input type="date" id="empJoinDate" class="input">
+        
+        <div class="grid-2">
+            <div>
+                <label class="label">مبلغ حقوق ماهانه</label>
+                <input type="number" id="empSalary" class="input" placeholder="0">
+            </div>
+            <div>
+                <label class="label">ارز حقوق</label>
+                <select id="empCurr" class="input"></select>
+            </div>
+        </div>
+
+        <button class="btn btn-green" style="width:100%" onclick="saveNewEmployee()">
+            ثبت و استخدام (F10)
+        </button>
+    </div>
+</div>
+
+<div id="modalEmpLedger" class="modal">
+    <div class="modal-content" style="max-width:900px; height:90vh; display:flex; flex-direction:column;">
+        <span class="close-icon" onclick="closeModal('modalEmpLedger')">&times;</span>
+        <div class="card-header" style="justify-content:flex-start; gap:15px;">
+            <span>صورت‌حساب: <span id="ledgerEmpName" style="color:var(--gold-primary)"></span></span>
+            <span id="ledgerEmpJob" style="font-size:12px; opacity:0.7; font-weight:normal"></span>
+        </div>
+        
+        <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(212,175,55,0.1); padding:15px; border-radius:12px; border:1px solid var(--gold-primary); margin-bottom:15px;">
+            <div>
+                <div style="font-size:12px; color:var(--text-muted)">مانده نهایی حساب (قابل پرداخت):</div>
+                <div id="ledgerEmpBalance" style="font-size:24px; font-weight:900; direction:ltr; margin-top:5px;">0</div>
+            </div>
+            <button class="btn btn-blue" onclick="paySalaryFromLedger()">
+                💰 پرداخت نقدی (برداشت)
+            </button>
         </div>
         
         <div class="table-container" style="flex:1; overflow-y:auto;">
             <table>
                 <thead>
                     <tr>
-                        <th>تاریخ</th>
-                        <th>شرح</th>
-                        <th>برداشت (بدهکار)</th>
-                        <th>حقوق (بستانکار)</th>
-                        <th>مانده</th>
-                        <th>حذف</th>
+                        <th style="width:15%">تاریخ</th>
+                        <th style="width:35%">شرح عملیات</th>
+                        <th style="width:15%; color:var(--danger)">برداشت (نقد)</th>
+                        <th style="width:15%; color:var(--success)">حقوق (طلب)</th>
+                        <th style="width:15%">مانده (Balance)</th>
+                        <th style="width:5%">حذف</th>
                     </tr>
                 </thead>
                 <tbody id="empLedgerBody"></tbody>
             </table>
         </div>
-        <div style="margin-top:10px; text-align:left">
-            <button class="btn btn-outline" onclick="printEmpLedger()">🖨 چاپ صورت‌حساب</button>
+        <div style="margin-top:10px; text-align:left; display:flex; gap:10px;">
+            <button class="btn btn-outline" onclick="printEmpLedgerCurrent()">🖨 چاپ صورت‌حساب (Statement)</button>
             <button class="btn btn-red" onclick="closeModal('modalEmpLedger')">بستن</button>
         </div>
+        <input type="hidden" id="currentEmpId">
     </div>
 </div>
 <script>
@@ -2342,6 +2355,7 @@ function applyTranslations() {
         updateUI(); 
     }
 }
+
 class DBAdapter {
     constructor(dbName, version) { this.dbName = dbName; this.version = version; this.db = null; }
     async init() {
@@ -2349,14 +2363,8 @@ class DBAdapter {
             const request = indexedDB.open(this.dbName, this.version);
             request.onupgradeneeded = (event) => {
                 const db = event.target.result;
-                // لیست کامل جداول شامل کارمندان و دفتر حساب آن‌ها
-                const stores = [
-                    'users', 'customers', 'cashBox', 'currencies', 'hawalas', 
-                    'accounts', 'journal', 'cities', 'initialCapital', 
-                    'cityHawalaCounters', 'fxProfit', 'settings',
-                    'employees', 'employeeLedger' // <--- این دو مورد جدید اضافه شد
-                ];
-                stores.forEach(store => {
+                // در اینجا employees و employeeLedger اضافه شدند
+                ['users', 'customers', 'cashBox', 'currencies', 'hawalas', 'accounts', 'journal', 'cities', 'initialCapital', 'cityHawalaCounters', 'fxProfit', 'settings', 'employees', 'employeeLedger'].forEach(store => {
                     if (!db.objectStoreNames.contains(store)) db.createObjectStore(store);
                 });
             };
@@ -2366,13 +2374,8 @@ class DBAdapter {
     }
     async loadAll() {
         const data = {};
-        // اضافه کردن جداول جدید به لیست لود
-        const stores = [
-            'users', 'customers', 'cashBox', 'currencies', 'hawalas', 
-            'accounts', 'journal', 'cities', 'initialCapital', 
-            'cityHawalaCounters', 'fxProfit', 'settings',
-            'employees', 'employeeLedger'
-        ];
+        // در اینجا هم اضافه شدند
+        const stores = ['users', 'customers', 'cashBox', 'currencies', 'hawalas', 'accounts', 'journal', 'cities', 'initialCapital', 'cityHawalaCounters', 'fxProfit', 'settings', 'employees', 'employeeLedger'];
         const tx = this.db.transaction(stores, 'readonly');
         const promises = stores.map(store => new Promise(resolve => {
             const req = tx.objectStore(store).get('root');
@@ -2383,21 +2386,15 @@ class DBAdapter {
         return data;
     }
     async saveAll(dbObj) {
-        // اضافه کردن جداول جدید به لیست ذخیره
-        const stores = Object.keys(dbObj).filter(k => [
-            'users', 'customers', 'cashBox', 'currencies', 'hawalas', 
-            'accounts', 'journal', 'cities', 'initialCapital', 
-            'cityHawalaCounters', 'fxProfit', 'settings',
-            'employees', 'employeeLedger'
-        ].includes(k));
-        
+        // در اینجا هم اضافه شدند تا موقع ذخیره نادیده گرفته نشوند
+        const stores = Object.keys(dbObj).filter(k => ['users', 'customers', 'cashBox', 'currencies', 'hawalas', 'accounts', 'journal', 'cities', 'initialCapital', 'cityHawalaCounters', 'fxProfit', 'settings', 'employees', 'employeeLedger'].includes(k));
         const tx = this.db.transaction(stores, 'readwrite');
         stores.forEach(s => tx.objectStore(s).put(dbObj[s], 'root'));
         return new Promise((res, rej) => { tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); });
     }
 }
-
-const dbAdapter = new DBAdapter('heratiha_secure_db_v4', 4);
+// توجه: عدد آخر به 4 تغییر کرد تا تغییرات دیتابیس اعمال شود
+const dbAdapter = new DBAdapter('heratiha_secure_db_v3', 4);
 
 function generateSalt() { return CryptoJS.lib.WordArray.random(128/8).toString(); }
 function hashPassword(pwd, salt) { return CryptoJS.PBKDF2(pwd, salt, { keySize: 256/32, iterations: 1000 }).toString(); }
@@ -2995,7 +2992,7 @@ function renderJournal() {
         return `<tr><td style="font-size:11px">${timeStr}</td><td>${j.section}</td><td>${escapeHtml(j.desc)}</td><td dir="ltr" style="font-size:11px; font-weight:bold">${j.amt}</td><td style="font-size:11px">${j.user}</td><td class="admin-only-col"><button class="btn ${btnStyle}" style="padding:2px 5px; font-size:10px" onclick="deleteLog(${j.time}, ${j.id})">${btnText}</button></td></tr>`;
     }).join('');
 }
-// 3. حذف لاگ و بازگشت پول (اصلاح شده شامل بازگشت حقوق)
+
 async function deleteLog(time, logId) {
     const logIndex = db.journal.findIndex(j => (j.id && j.id === logId) || j.time === time);
     if (logIndex === -1) return;
@@ -3010,38 +3007,33 @@ async function deleteLog(time, logId) {
     if (logEntry.type && logEntry.data) {
         const d = logEntry.data;
         try {
-            // --- بخش جدید برای حقوق کارمندان ---
-            if (logEntry.type === 'SALARY_PAY') {
-                // 1. پول به صندوق برگردد
-                if (d.curr && d.amt) {
-                    db.cashBox[d.curr] = (db.cashBox[d.curr] || 0) + d.amt;
-                }
-                // 2. تراکنش از حساب کارمند پاک شود
-                if (d.empId && d.txId && db.employeeLedger[d.empId]) {
-                    db.employeeLedger[d.empId] = db.employeeLedger[d.empId].filter(x => x.id !== d.txId);
-                }
-            }
-            // -----------------------------------
-
-            else if (logEntry.type === 'HAWALA_SUBMIT') {
+            if (logEntry.type === 'HAWALA_SUBMIT') {
                 const hIndex = db.hawalas.findIndex(h => h.id === d.hawalaId);
+                
                 if (hIndex > -1) {
                     const h = db.hawalas[hIndex];
+                    
+
                     if (h.type === 'Outgoing' && !h.isInternal) { 
                         db.cashBox[h.curr] = (db.cashBox[h.curr] || 0) - h.amt; 
+                        
+
                         if(h.comm) {
                             const cCurr = h.commCurr || h.curr;
                             db.cashBox[cCurr] = (db.cashBox[cCurr] || 0) - h.comm; 
                         }
                     }
+
                     if (h.isInternal && h.internalCust && db.accounts[h.internalCust]) {
                         if(d.accId) {
                              db.accounts[h.internalCust] = db.accounts[h.internalCust].filter(acc => acc.id !== d.accId);
                         }
                     }
+
                     db.hawalas.splice(hIndex, 1);
                 }
-                // بازگشت شماره انداز
+
+                // ث) بازگشت شماره انداز (Counter)
                 if (d.hawalaId) {
                     const parts = d.hawalaId.split('-');
                     if(parts.length >= 3) {
@@ -3049,6 +3041,7 @@ async function deleteLog(time, logId) {
                         const typeChar = parts[1]; 
                         const num = parseInt(parts[2]);
                         const typeKey = typeChar === 'O' ? 'Outgoing' : 'Incoming';
+
                         if (db.cityHawalaCounters[city] && db.cityHawalaCounters[city][typeKey] === num + 1) {
                             db.cityHawalaCounters[city][typeKey]--;
                         }
@@ -3063,9 +3056,11 @@ async function deleteLog(time, logId) {
                     }
                 } else {
                     if (d.direction === 'Buy') { 
+
                         db.cashBox[d.baseCurr] -= d.baseAmt; 
                         db.cashBox[d.quoteCurr] += d.quoteAmt; 
                     } else { 
+
                         db.cashBox[d.baseCurr] += d.baseAmt; 
                         db.cashBox[d.quoteCurr] -= d.quoteAmt; 
                     }
@@ -3077,8 +3072,10 @@ async function deleteLog(time, logId) {
 
             else if (logEntry.type === 'TX') {
                 if (d.type === 'debit') {
+
                     db.cashBox[d.curr] += d.amt; 
                 } else {
+
                     db.cashBox[d.curr] -= d.amt; 
                 }
                 if (db.accounts[d.cust]) {
@@ -3091,22 +3088,27 @@ async function deleteLog(time, logId) {
                 if(h) {
                     h.status = 'Pending'; 
                     h.execDate = 0;
+                    
                     if (d.isInternal && d.cust) {
                         if(db.accounts[d.cust] && d.accId) {
                             db.accounts[d.cust] = db.accounts[d.cust].filter(acc => acc.id !== d.accId);
                         }
                     } else {
+
                         db.cashBox[d.curr] += d.amt;
                     }
                 }
             }
 
             else if (logEntry.type === 'TT_EXTERNAL') {
+
                 db.cashBox[d.curr] -= d.amt;
             }
             else if (logEntry.type === 'TT_INTERNAL') {
                 if(db.accounts[d.cust]) db.accounts[d.cust] = db.accounts[d.cust].filter(acc => acc.id !== d.accId);
             }
+
+            // --- 6. سایر موارد ---
             else if (logEntry.type === 'ACC_TRANSFER') {
                 if(db.accounts[d.s]) db.accounts[d.s] = db.accounts[d.s].filter(a => a.id !== d.id1);
                 if(db.accounts[d.r]) db.accounts[d.r] = db.accounts[d.r].filter(a => a.id !== d.id2);
@@ -3129,6 +3131,17 @@ async function deleteLog(time, logId) {
                     if(d.profit) fxProfit[d.curr] = (fxProfit[d.curr] || 0) - d.profit;
                 }
             }
+            
+            // --- بخش جدید برای بازگشت حقوق ---
+            else if (logEntry.type === 'EMP_PAYMENT') {
+                // 1. بازگشت پول به صندوق
+                db.cashBox[d.curr] = (db.cashBox[d.curr] || 0) + d.amount;
+
+                // 2. حذف تراکنش از دفتر حساب کارمند
+                if(db.employeeLedger && db.employeeLedger[d.empId]) {
+                    db.employeeLedger[d.empId] = db.employeeLedger[d.empId].filter(x => x.id !== d.txId);
+                }
+            }
 
         } catch (err) { 
             console.error(err); 
@@ -3142,10 +3155,9 @@ async function deleteLog(time, logId) {
     await saveDB(); 
     renderJournal(); 
     renderDashboard(); 
-    if(typeof renderEmployees === 'function') renderEmployees(); // بروزرسانی صفحه کارمندان
-
     if(document.getElementById('hawala').classList.contains('active')) filterHawala();
     if(document.getElementById('accounts').classList.contains('active')) loadCustomerLedger();
+    if(document.getElementById('employees').classList.contains('active')) renderEmployees(); // رفرش لیست کارمندان
 
     alert(currentLang === 'fa' ? "عملیات بازگردانی شد و موجودی‌ها اصلاح گردید." : "Reversed successfully.");
 }
@@ -4477,164 +4489,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
 if (!db.employees) { db.employees = []; }
 
-function renderEmployees() {
-    const tbody = document.getElementById('employeeBody');
-    if (!tbody) return;
-    
-    // اطمینان از اینکه لیست وجود دارد
-    if (!db.employees) db.employees = [];
-
-    // محاسبه مانده دقیق از روی دفتر حساب
-    db.employees.forEach(emp => {
-        let bal = 0;
-        if (db.employeeLedger && db.employeeLedger[emp.id]) {
-            db.employeeLedger[emp.id].forEach(tx => {
-                const credit = parseFloat(tx.credit) || 0; // حقوق (بستانکار)
-                const debit = parseFloat(tx.debit) || 0;   // برداشت (بدهکار)
-                // اگر نوع مشخص نشده بود، از روی amount تشخیص بده
-                if(tx.type === 'credit') bal += (tx.amount || 0);
-                else if(tx.type === 'debit') bal -= (tx.amount || 0);
-                else bal += (credit - debit);
-            });
-        }
-        emp.balance = bal;
-    });
-
-    tbody.innerHTML = db.employees.map(emp => {
-        const bal = emp.balance || 0;
-        
-        // منطق تشخیص بدهکاری/طلبکاری
-        // اگر عدد مثبت باشد: یعنی حقوق گرفته اما هنوز برداشت نکرده (طلبکار است - سبز)
-        // اگر عدد منفی باشد: یعنی بیشتر از حقوقش پول برداشته (بدهکار است - قرمز)
-        
-        const isNegative = bal < 0; 
-        const color = isNegative ? '#ff5252' : '#00e676'; // قرمز برای منفی، سبز برای مثبت
-        
-        // متن وضعیت
-        let statusText = '';
-        if (bal === 0) statusText = '<span style="color:gray">بی‌حساب (تسویه)</span>';
-        else if (isNegative) statusText = '<span style="color:#ff5252">بدهکار به صندوق (قرض)</span>';
-        else statusText = '<span style="color:#00e676">طلبکار (حقوق مانده)</span>';
-        
-        return `
-            <tr>
-                <td style="font-weight:bold">${emp.name}</td>
-                <td>${emp.job}</td>
-                <td>${parseInt(emp.salary).toLocaleString()} ${emp.curr}</td>
-                
-                <td style="background:rgba(0,0,0,0.2); text-align:center;">
-                    <div style="font-size:16px; font-weight:900; color:${color}; direction:ltr">
-                        ${bal.toLocaleString()}
-                    </div>
-                    <div style="font-size:11px; margin-top:2px;">${statusText}</div>
-                </td>
-                
-                <td>
-                    <button class="btn btn-outline btn-sm" onclick="openEmpLedger('${emp.id}')">📜 صورت‌حساب</button>
-                    <button class="btn btn-blue btn-sm" onclick="paySalary('${emp.id}')">💰 پرداخت/دریافت</button>
-                    <button class="btn btn-red btn-sm" onclick="deleteEmployee('${emp.id}')">❌</button>
-                </td>
-            </tr>
-        `;
-    }).join('');
-    
-    // پر کردن لیست انتخاب ارز در مودال جدید اگر خالی بود
-    const currSelect = document.getElementById('empCurr');
-    if(currSelect && currSelect.options.length === 0) {
-        currSelect.innerHTML = db.currencies.map(c => `<option value="${c}">${c}</option>`).join('');
-    }
-}
-async function saveNewEmployee() {
-    const name = document.getElementById('empName').value;
-    const job = document.getElementById('empJob').value;
-    const salary = parseFloat(document.getElementById('empSalary').value);
-    const curr = document.getElementById('empCurr').value;
-
-    if(!name || !salary) { alert("لطفاً نام و حقوق را وارد کنید"); return; }
-
-    const newId = Date.now().toString();
-    const newEmp = { id: newId, name: name, job: job, salary: salary, curr: curr, balance: 0 };
-
-    if(!db.employees) db.employees = [];
-    db.employees.push(newEmp);
-    
-    if(!db.employeeLedger) db.employeeLedger = {};
-    db.employeeLedger[newId] = [];
-
-    await saveDB();
-    closeModal('modalNewEmp');
-    renderEmployees();
-    alert("کارمند جدید استخدام شد.");
-}
-
-// 3. چک کردن خودکار حقوق سر ماه
-async function checkAutoMonthlySalary() {
-    if (!db.employees || db.employees.length === 0) return;
-    
-    const now = new Date();
-    // ساخت شناسه برای ماه جاری (مثلاً SALARY_2025_11) تا تکراری واریز نشود
-    const salaryMonthID = `SALARY_${now.getFullYear()}_${now.getMonth()}`; 
-
-    let changesMade = false;
-
-    db.employees.forEach(emp => {
-        if (!db.employeeLedger) db.employeeLedger = {};
-        if (!db.employeeLedger[emp.id]) db.employeeLedger[emp.id] = [];
-        
-        // چک کن آیا حقوق این ماه قبلاً ثبت شده؟
-        const alreadyPaid = db.employeeLedger[emp.id].some(tx => tx.metaId === salaryMonthID);
-
-        if (!alreadyPaid) {
-            // ثبت حقوق (بستانکار شدن کارمند)
-            db.employeeLedger[emp.id].push({
-                id: Date.now() + Math.random(),
-                date: Date.now(),
-                type: 'credit', 
-                amount: parseFloat(emp.salary),
-                curr: emp.curr,
-                desc: `حقوق ماهانه خودکار - ${new Date().toLocaleDateString('fa-IR', {month:'long'})}`,
-                metaId: salaryMonthID
-            });
-            changesMade = true;
-        }
-    });
-
-    if (changesMade) {
-        await saveDB();
-        renderEmployees(); 
-    }
-}
-
-// 2. پرداخت دستی پول به کارمند (اصلاح شده برای ذخیره اطلاعات جهت بازگشت)
 async function paySalary(id) {
     const emp = db.employees.find(e => e.id === id);
     if(!emp) return;
     
+    // محاسبه مانده فعلی
     let currentBal = 0;
     if(db.employeeLedger[id]) {
-        db.employeeLedger[id].forEach(t => {
-            currentBal += ((parseFloat(t.credit)||0) - (parseFloat(t.debit)||0));
-        });
+        db.employeeLedger[id].forEach(t => currentBal += (t.credit - t.debit));
     }
 
-    const amountToPay = prompt(`پرداخت نقد به ${emp.name}\n(وضعیت حساب فعلی: ${currentBal.toLocaleString()} ${emp.curr})\nمبلغ پرداختی را وارد کنید:`);
+    const amountToPay = prompt(`پرداخت نقد به ${emp.name}\n(طلب فعلی ایشان: ${currentBal.toLocaleString()} ${emp.curr})\nمبلغ را وارد کنید:`);
     
     if(amountToPay && parseFloat(amountToPay) > 0) {
         const amt = parseFloat(amountToPay);
         const desc = prompt("بابت / توضیحات:", "دریافت مساعده / تسویه حساب");
         
-        const boxBalance = db.cashBox[emp.curr] || 0;
-        
-        // کسر از صندوق
-        db.cashBox[emp.curr] = boxBalance - amt;
-        
-        // ساخت یک شناسه منحصر به فرد برای تراکنش
-        const txId = Date.now();
+        // چک کردن موجودی صندوق
+        const currentCash = (db.cashBox[emp.curr] || 0) + (db.initialCapital[emp.curr] || 0);
+        if(currentCash < amt) { alert(`موجودی صندوق ${emp.curr} کافی نیست!`); return; }
 
-        // ثبت برداشت در حساب کارمند
+        // کسر از صندوق
+        db.cashBox[emp.curr] -= amt;
+        
+        // ثبت برداشت (بدهکار شدن کارمند)
         if(!db.employeeLedger[id]) db.employeeLedger[id] = [];
         db.employeeLedger[id].push({
-            id: txId,
+            id: Date.now(),
             date: Date.now(),
             type: 'debit',
             amount: amt,
@@ -4642,59 +4523,17 @@ async function paySalary(id) {
             desc: desc || 'دریافت نقدی'
         });
         
-        // **نکته مهم:** اینجا txId و curr را هم ذخیره می‌کنیم تا موقع حذف لاگ بتوانیم پول را برگردانیم
-        logTx('حقوق', `پرداخت به ${emp.name}`, `برداشت نقد: ${amt} ${emp.curr}`, 'SALARY_PAY', { empId: id, amt: amt, curr: emp.curr, txId: txId });
+        // ثبت در لاگ سیستم
+        logTx('حقوق', `پرداخت به ${emp.name}`, `Cash Out: ${amt} ${emp.curr}`, 'SALARY_PAY', { empId: id, amt: amt });
 
         await saveDB();
-        renderEmployees(); 
-        renderDashboard(); 
-        alert("پرداخت انجام شد و سند صادر گردید.");
+        renderEmployees();
+        renderDashboard(); // آپدیت صندوق در داشبورد
+        alert("پرداخت انجام شد.");
     }
 }
-function openEmpLedger(id) {
-    const emp = db.employees.find(e => e.id === id);
-    if(!emp) return;
 
-    // تنظیم دکمه پرینت که آیدی درست را بگیرد
-    const printBtn = document.querySelector('#modalEmpLedger .btn-outline');
-    if(printBtn) printBtn.setAttribute('onclick', `printEmpLedger('${id}')`);
 
-    document.getElementById('ledgerEmpName').innerText = `${emp.name} (${emp.job})`;
-    const tbody = document.getElementById('empLedgerBody');
-    tbody.innerHTML = '';
-
-    const list = db.employeeLedger[id] || [];
-    list.sort((a,b) => a.date - b.date); // مرتب‌سازی تاریخی
-
-    let runningBalance = 0;
-    list.forEach(tx => {
-        if (tx.type === 'credit') runningBalance += tx.amount; // حقوق
-        else runningBalance -= tx.amount; // برداشت
-
-        const dateStr = new Date(tx.date).toLocaleDateString('fa-IR');
-        const debitDisplay = tx.type === 'debit' ? tx.amount.toLocaleString() : '-';
-        const creditDisplay = tx.type === 'credit' ? tx.amount.toLocaleString() : '-';
-        const colorClass = runningBalance >= 0 ? 'text-green' : 'text-red';
-
-        tbody.innerHTML += `
-            <tr>
-                <td style="font-size:12px">${dateStr}</td>
-                <td style="font-size:12px">${tx.desc}</td>
-                <td style="color:var(--danger); font-weight:bold">${debitDisplay}</td>
-                <td style="color:var(--success); font-weight:bold">${creditDisplay}</td>
-                <td class="${colorClass}" style="direction:ltr; font-weight:bold">${runningBalance.toLocaleString()}</td>
-                <td><button class="btn btn-red btn-sm" onclick="deleteEmpTx('${id}', ${tx.id})">❌</button></td>
-            </tr>
-        `;
-    });
-
-    document.getElementById('ledgerEmpBalance').innerText = `${runningBalance.toLocaleString()} ${emp.curr}`;
-    document.getElementById('ledgerEmpBalance').style.color = runningBalance >= 0 ? 'var(--gold-primary)' : 'var(--danger)';
-    
-    openModal('modalEmpLedger');
-}
-
-// 6. حذف تراکنش (در صورت اشتباه)
 async function deleteEmpTx(empId, txId) {
     if(!confirm("آیا مطمئن هستید؟ (اگر پرداخت نقدی باشد، پول به صندوق برمی‌گردد)")) return;
     const list = db.employeeLedger[empId];
@@ -4712,9 +4551,342 @@ async function deleteEmpTx(empId, txId) {
     renderEmployees();
 }
 
-// 7. حذف کامل کارمند
+// === شروع کدهای جاوا اسکریپت سیستم حقوق و دستمزد پیشرفته ===
+
+// 1. نمایش لیست کارمندان در صفحه مدیریت
+function renderEmployees() {
+    const tbody = document.getElementById('employeeBody');
+    if (!tbody) return;
+    
+    // اطمینان از وجود آرایه‌ها در دیتابیس
+    if (!db.employees) db.employees = [];
+    if (!db.employeeLedger) db.employeeLedger = {};
+
+    tbody.innerHTML = db.employees.map(emp => {
+        // محاسبه مانده حساب (Credits - Debits)
+        let balance = 0;
+        const ledger = db.employeeLedger[emp.id] || [];
+        ledger.forEach(tx => {
+            if(tx.type === 'credit') balance += tx.amount; // حقوق (طلب)
+            else if(tx.type === 'debit') balance -= tx.amount; // برداشت (بدهی)
+        });
+
+        const color = balance >= 0 ? 'var(--success)' : 'var(--danger)'; // سبز=طلبکار، قرمز=بدهکار
+        const statusText = balance >= 0 ? 'بستانکار (طلب)' : 'بدهکار (پیش‌خور)';
+        const joinDate = emp.joinDate ? new Date(emp.joinDate).toLocaleDateString('fa-IR') : '-';
+
+        return `
+            <tr>
+                <td>
+                    <div style="font-weight:bold">${emp.name}</div>
+                </td>
+                <td>
+                    <div style="font-size:12px">${emp.job}</div>
+                    <div style="font-size:10px; opacity:0.6">استخدام: ${joinDate}</div>
+                </td>
+                <td>${parseInt(emp.salary).toLocaleString()} ${emp.curr}</td>
+                <td style="background:rgba(0,0,0,0.1)">
+                    <div style="color:${color}; font-weight:900; direction:ltr; font-size:15px;">
+                        ${balance.toLocaleString()} ${emp.curr}
+                    </div>
+                    <div style="font-size:10px; opacity:0.8">${statusText}</div>
+                </td>
+                <td>
+                    <button class="btn btn-outline btn-sm" onclick="openEmpLedger('${emp.id}')">📜 صورت‌حساب</button>
+                    <button class="btn btn-blue btn-sm" onclick="quickPaySalary('${emp.id}')">💰 پرداخت</button>
+                    <button class="btn btn-red btn-sm" onclick="deleteEmployee('${emp.id}')">❌</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    // پر کردن لیست ارزها
+    const currSelect = document.getElementById('empCurr');
+    if(currSelect && currSelect.options.length === 0) {
+        currSelect.innerHTML = db.currencies.map(c => `<option value="${c}">${c}</option>`).join('');
+    }
+}
+
+// 2. استخدام کارمند جدید
+async function saveNewEmployee() {
+    const name = document.getElementById('empName').value;
+    const job = document.getElementById('empJob').value;
+    const salary = parseFloat(document.getElementById('empSalary').value);
+    const curr = document.getElementById('empCurr').value;
+    const joinDate = document.getElementById('empJoinDate').value; // YYYY-MM-DD
+
+    if(!name || !salary) { alert("نام و حقوق الزامی است"); return; }
+
+    const newId = Date.now().toString();
+    const newEmp = { 
+        id: newId, 
+        name: name, 
+        job: job, 
+        salary: salary, 
+        curr: curr, 
+        joinDate: joinDate || new Date().toISOString().split('T')[0], // اگر وارد نشد، امروز
+        status: 'Active'
+    };
+
+    if(!db.employees) db.employees = [];
+    db.employees.push(newEmp);
+    
+    // ایجاد دفتر حساب خالی
+    if(!db.employeeLedger) db.employeeLedger = {};
+    db.employeeLedger[newId] = [];
+
+    await saveDB();
+    closeModal('modalNewEmp');
+    
+    // چک کردن فوری حقوق (شاید تاریخ استخدام مال قبل باشد)
+    await checkAutoMonthlySalary();
+    
+    renderEmployees();
+    alert("کارمند با موفقیت استخدام شد.");
+}
+
+// 3. سیستم هوشمند محاسبه حقوق سر ماه (Auto Accrual)
+// این تابع باید در ابتدای برنامه (init) صدا زده شود.
+async function checkAutoMonthlySalary() {
+    if (!db.employees || db.employees.length === 0) return;
+    
+    let changesMade = false;
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth(); // 0-11
+
+    db.employees.forEach(emp => {
+        if(emp.status !== 'Active') return;
+        if (!db.employeeLedger[emp.id]) db.employeeLedger[emp.id] = [];
+
+        // تاریخ شروع را بررسی می‌کنیم
+        const startDate = new Date(emp.joinDate);
+        
+        // حلقه از تاریخ شروع تا امروز (برای ماه‌های گذشته هم حقوق رد می‌کند اگر سیستم خاموش بوده)
+        let loopDate = new Date(startDate);
+        // تنظیم به اول ماه شروع
+        loopDate.setDate(1); 
+
+        while (loopDate <= now) {
+            // ساخت شناسه یکتا برای هر ماه: SAL_ID_YEAR_MONTH
+            // مثال: SAL_12345_2025_11 (برای دسامبر)
+            const salaryMetaId = `SAL_${emp.id}_${loopDate.getFullYear()}_${loopDate.getMonth()}`;
+            
+            // آیا حقوق این ماه قبلاً رد شده؟
+            const alreadyAccrued = db.employeeLedger[emp.id].some(tx => tx.metaId === salaryMetaId);
+
+            // شرط: اگر حقوق رد نشده AND ماهِ حلقه، ماهِ آینده نباشد (یعنی ماه کامل شده یا جاری است)
+            // نکته: معمولا حقوق سر برج رد می‌شود. اینجا فرض می‌کنیم اگر وارد ماه جدید شدیم، حقوق ماه قبل باید واریز شود.
+            // اما برای سادگی: حقوق هر ماه، در همان ماه (مثلاً روز اول) یا به محض ورود به سیستم در آن ماه ثبت می‌شود.
+            
+            if (!alreadyAccrued) {
+                // نام ماه به فارسی یا انگلیسی
+                const monthName = loopDate.toLocaleDateString(currentLang==='fa'?'fa-IR':'en-US', { year:'numeric', month:'long' });
+                
+                db.employeeLedger[emp.id].push({
+                    id: Date.now() + Math.random(),
+                    date: loopDate.getTime(), // تاریخ ثبت را اول آن ماه می‌زنیم یا زمان فعلی
+                    type: 'credit', // بستانکار شدن کارمند
+                    amount: parseFloat(emp.salary),
+                    curr: emp.curr,
+                    desc: `حقوق ماهانه: ${monthName}`,
+                    metaId: salaryMetaId // کلید جلوگیری از تکرار
+                });
+                changesMade = true;
+            }
+
+            // رفتن به ماه بعد
+            loopDate.setMonth(loopDate.getMonth() + 1);
+        }
+    });
+
+    if (changesMade) {
+        await saveDB();
+        console.log("Auto Salary Check: Updated.");
+    }
+}
+
+// 4. باز کردن صورت‌حساب (Ledger)
+function openEmpLedger(id) {
+    const emp = db.employees.find(e => e.id === id);
+    if(!emp) return;
+
+    document.getElementById('currentEmpId').value = id; // ذخیره برای دکمه‌های داخل مودال
+    document.getElementById('ledgerEmpName').innerText = emp.name;
+    document.getElementById('ledgerEmpJob').innerText = emp.job;
+    
+    const tbody = document.getElementById('empLedgerBody');
+    tbody.innerHTML = '';
+
+    const list = db.employeeLedger[id] || [];
+    // مرتب‌سازی بر اساس تاریخ
+    list.sort((a,b) => a.date - b.date);
+
+    let runningBalance = 0;
+    
+    list.forEach(tx => {
+        if (tx.type === 'credit') runningBalance += tx.amount; 
+        else runningBalance -= tx.amount;
+
+        const dateStr = new Date(tx.date).toLocaleDateString(currentLang==='fa'?'fa-IR':'en-US');
+        const debitDisplay = tx.type === 'debit' ? tx.amount.toLocaleString() : '-';
+        const creditDisplay = tx.type === 'credit' ? tx.amount.toLocaleString() : '-';
+        
+        // رنگ مانده
+        const balanceColor = runningBalance >= 0 ? 'var(--gold-primary)' : 'var(--danger)';
+        const deleteBtn = `<button class="btn btn-red btn-sm" onclick="revertEmpTx('${id}', ${tx.id})">🗑</button>`;
+
+        tbody.innerHTML += `
+            <tr>
+                <td style="font-size:12px">${dateStr}</td>
+                <td style="font-size:12px">${tx.desc}</td>
+                <td style="color:var(--danger); font-weight:bold">${debitDisplay}</td>
+                <td style="color:var(--success); font-weight:bold">${creditDisplay}</td>
+                <td style="color:${balanceColor}; font-weight:bold; direction:ltr">${runningBalance.toLocaleString()}</td>
+                <td>${deleteBtn}</td>
+            </tr>
+        `;
+    });
+
+    const finalBalEl = document.getElementById('ledgerEmpBalance');
+    finalBalEl.innerText = `${runningBalance.toLocaleString()} ${emp.curr}`;
+    finalBalEl.style.color = runningBalance >= 0 ? 'var(--success)' : 'var(--danger)';
+    
+    openModal('modalEmpLedger');
+}
+
+// 5. پرداخت حقوق (برداشت از صندوق و بدهکار کردن کارمند)
+async function processEmployeePayment(empId, amount, desc) {
+    const emp = db.employees.find(e => e.id === empId);
+    if(!emp) return;
+
+    // 1. چک کردن موجودی صندوق
+    const currentCash = (db.cashBox[emp.curr] || 0) + (db.initialCapital[emp.curr] || 0);
+    if(currentCash < amount) {
+        alert(`موجودی صندوق ${emp.curr} کافی نیست!\nموجودی فعلی: ${currentCash.toLocaleString()}`);
+        return;
+    }
+
+    // 2. کسر از صندوق
+    db.cashBox[emp.curr] = (db.cashBox[emp.curr] || 0) - amount;
+
+    // 3. ثبت در دفتر حساب کارمند (Debit)
+    const txId = Date.now();
+    const ledgerEntry = {
+        id: txId,
+        date: Date.now(),
+        type: 'debit',
+        amount: amount,
+        curr: emp.curr,
+        desc: desc || 'پرداخت نقدی / مساعده',
+        metaId: null // پرداختی دستی متا ندارد
+    };
+    db.employeeLedger[empId].push(ledgerEntry);
+
+    // 4. ثبت در لاگ سراسری (Journal) برای امکان Revert
+    // نوع EMP_PAYMENT را اضافه می‌کنیم که در deleteLog شناسایی شود
+    logTx('حقوق و دستمزد', `پرداخت به ${emp.name} (${desc})`, `خروج نقد: ${amount} ${emp.curr}`, 'EMP_PAYMENT', { 
+        empId: empId, 
+        txId: txId, 
+        amount: amount, 
+        curr: emp.curr 
+    });
+
+    await saveDB();
+    renderEmployees();
+    renderDashboard(); // به‌روزرسانی موجودی صندوق در صفحه اصلی
+    if(document.getElementById('modalEmpLedger').style.display === 'flex') {
+        openEmpLedger(empId); // رفرش لیست اگر باز است
+    }
+    alert("پرداخت انجام شد.");
+}
+
+// توابع کمکی برای دکمه‌ها
+function quickPaySalary(id) {
+    const emp = db.employees.find(e => e.id === id);
+    const amt = prompt(`پرداخت وجه به ${emp.name}\nحقوق ماهانه: ${emp.salary}\nمبلغ پرداختی را وارد کنید:`);
+    if(amt && parseFloat(amt) > 0) {
+        processEmployeePayment(id, parseFloat(amt), "پرداخت نقدی");
+    }
+}
+
+function paySalaryFromLedger() {
+    const id = document.getElementById('currentEmpId').value;
+    quickPaySalary(id);
+}
+
+// 6. چاپ صورت‌حساب استاندارد
+function printEmpLedgerCurrent() {
+    const id = document.getElementById('currentEmpId').value;
+    if(!id) return;
+    const emp = db.employees.find(e => e.id === id);
+    const list = db.employeeLedger[id] || [];
+    list.sort((a,b) => a.date - b.date);
+
+    let rows = '';
+    let balance = 0;
+    
+    list.forEach(tx => {
+        if(tx.type === 'credit') balance += tx.amount; 
+        else balance -= tx.amount;
+        
+        const cIn = tx.type==='credit' ? tx.amount.toLocaleString() : '';
+        const cOut = tx.type==='debit' ? tx.amount.toLocaleString() : '';
+        
+        rows += `
+        <tr>
+            <td>${new Date(tx.date).toLocaleDateString('fa-IR')}</td>
+            <td>${tx.desc}</td>
+            <td>${cIn}</td>
+            <td>${cOut}</td>
+            <td dir="ltr">${balance.toLocaleString()}</td>
+        </tr>`;
+    });
+
+    const win = window.open('', '_blank', 'width=800,height=1100');
+    win.document.write(`
+    <html><head><title>HR Statement</title>
+    <style>
+        body { font-family: 'Vazirmatn', Tahoma; direction: rtl; padding: 30px; }
+        .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th, td { border: 1px solid #444; padding: 8px; text-align: center; }
+        th { background: #eee; }
+    </style>
+    </head><body>
+        ${getPrintHeaderHTML()}
+        <div class="header">
+            <h2>صورت‌حساب حقوق و دستمزد</h2>
+            <div>نام کارمند: <b>${emp.name}</b> (${emp.job})</div>
+            <div>تاریخ گزارش: ${new Date().toLocaleDateString('fa-IR')}</div>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>تاریخ</th>
+                    <th>شرح</th>
+                    <th>بستانکار (حقوق)</th>
+                    <th>بدهکار (برداشت)</th>
+                    <th>مانده</th>
+                </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+        </table>
+        <div style="margin-top:20px; font-weight:bold; font-size:14px;">
+            مانده نهایی قابل پرداخت: ${balance.toLocaleString()} ${emp.curr}
+        </div>
+        <div style="margin-top:50px; display:flex; justify-content:space-between; width:80%">
+            <div>امضاء حسابدار</div>
+            <div>امضاء کارمند</div>
+        </div>
+    </body></html>
+    `);
+    win.document.close(); win.print();
+}
+
+// 7. حذف کارمند
 async function deleteEmployee(id) {
-    if(confirm("هشدار: تمام سوابق و صورت‌حساب این کارمند پاک می‌شود. ادامه می‌دهید؟")) {
+    if(confirm("هشدار: آیا از حذف کامل این کارمند و تمام سوابق مالی او اطمینان دارید؟")) {
         db.employees = db.employees.filter(e => e.id !== id);
         delete db.employeeLedger[id];
         await saveDB();
@@ -4722,7 +4894,33 @@ async function deleteEmployee(id) {
     }
 }
 
-// 8. چاپ صورت‌حساب
+// 8. بازگردانی یک تراکنش خاص (Revert) از داخل مودال
+async function revertEmpTx(empId, txId) {
+    const list = db.employeeLedger[empId];
+    const tx = list.find(x => x.id === txId);
+    if(!tx) return;
+
+    if(!confirm("آیا از حذف این تراکنش اطمینان دارید؟\nاگر پرداخت نقدی باشد، پول به صندوق برمی‌گردد.")) return;
+
+    // اگر نوع تراکنش برداشت وجه (Debit) باشد، باید پول به صندوق برگردد
+    if (tx.type === 'debit') {
+        db.cashBox[tx.curr] = (db.cashBox[tx.curr] || 0) + tx.amount;
+        
+        // پیدا کردن و حذف لاگ مربوطه از ژورنال سراسری برای تمیزی کار
+        const logIndex = db.journal.findIndex(j => j.data && j.data.txId === txId);
+        if(logIndex > -1) db.journal.splice(logIndex, 1);
+    }
+    
+    // حذف از دفتر حساب
+    db.employeeLedger[empId] = list.filter(x => x.id !== txId);
+
+    await saveDB();
+    openEmpLedger(empId);
+    renderEmployees();
+    renderDashboard();
+    alert("تراکنش حذف و اصلاح شد.");
+}
+// === پایان کدهای حقوق و دستمزد ===
 function printEmpLedger(empId) {
     if(!empId) return;
     const emp = db.employees.find(e => e.id === empId);
