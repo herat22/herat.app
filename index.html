@@ -520,44 +520,61 @@ html[dir="ltr"] .submenu {
         </button>
     </div>
 </div>
-                <div class="grid-4" style="margin-top:25px">
-                    <div>
-                        <label class="label" data-i18n="lbl_filter_city">فیلتر شهر</label>
-                        <select id="filterHCity" class="input" onchange="filterHawala()"></select>
-                    </div>
-                    <div>
-                        <label class="label" data-i18n="lbl_type">نوع</label>
-                        <select id="filterHType" class="input" onchange="filterHawala()">
-                            <option value="All" data-i18n="opt_all">همه</option>
-                            <option value="Outgoing" data-i18n="opt_outgoing">ارسالی (Out)</option>
-                            <option value="Incoming" data-i18n="opt_incoming">دریافتی (In)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="label" data-i18n="lbl_status">وضعیت</label>
-                        <select id="filterHStatus" class="input" onchange="filterHawala()">
-                            <option value="All" data-i18n="opt_all">همه</option>
-                            <option value="Pending" data-i18n="opt_pending">در انتظار اجرا</option>
-                            <option value="Done" data-i18n="opt_done">اجرا/تسویه شده</option>
-                        </select>
-                    </div>
-<div id="divFilterGroup" style="display:none;">
-    <label class="label" style="color:#ff5252">فیلتر محرمانه</label>
-    <select id="filterHGroup" class="input" onchange="filterHawala()">
-        <option value="All">نمایش همه (A + B)</option>
-        <option value="A">فقط گروه A</option>
-        <option value="B">فقط گروه B</option>
-    </select>
+         <div class="grid-4" style="margin-top:25px; align-items:end;">
+    <div>
+        <label class="label" data-i18n="lbl_filter_city">فیلتر شهر</label>
+        <select id="filterHCity" class="input" onchange="filterHawala()"></select>
+    </div>
+    <div>
+        <label class="label" data-i18n="lbl_type">نوع</label>
+        <select id="filterHType" class="input" onchange="filterHawala()">
+            <option value="All" data-i18n="opt_all">همه</option>
+            <option value="Outgoing" data-i18n="opt_outgoing">ارسالی (Out)</option>
+            <option value="Incoming" data-i18n="opt_incoming">دریافتی (In)</option>
+        </select>
+    </div>
+    
+    <div>
+        <label class="label">📅 از تاریخ</label>
+        <input type="date" id="filterHDateStart" class="input" onchange="filterHawala()">
+    </div>
+    <div>
+        <label class="label">📅 تا تاریخ</label>
+        <input type="date" id="filterHDateEnd" class="input" onchange="filterHawala()">
+    </div>
+
+    <div style="grid-column: span 2;">
+        <label class="label">🔍 جستجوی شماره حواله / نام</label>
+        <input type="text" id="filterHSearchNum" class="input" placeholder="شماره یا نام..." oninput="filterHawala()">
+    </div>
+
+    <div>
+        <label class="label" data-i18n="lbl_status">وضعیت</label>
+        <select id="filterHStatus" class="input" onchange="filterHawala()">
+            <option value="All" data-i18n="opt_all">همه</option>
+            <option value="Pending" data-i18n="opt_pending">در انتظار اجرا</option>
+            <option value="Done" data-i18n="opt_done">اجرا/تسویه شده</option>
+        </select>
+    </div>
+    
+    <div id="divFilterGroup" style="display:none;">
+        <label class="label" style="color:#ff5252">فیلتر محرمانه</label>
+        <select id="filterHGroup" class="input" onchange="filterHawala()">
+            <option value="All">نمایش همه (A + B)</option>
+            <option value="A">فقط گروه A</option>
+            <option value="B">فقط گروه B</option>
+        </select>
+    </div>
+
+    <div style="grid-column: span 4; display:flex; gap:10px; border-top:1px dashed var(--gold-border); padding-top:10px;">
+        <button class="btn btn-outline" style="font-size:12px; flex:1" onclick="exportHawalaToExcel()">
+            <span data-i18n="btn_excel">📊 اکسل عالی</span>
+        </button>
+        <button class="btn btn-outline" style="font-size:12px; flex:1" onclick="printHawalaList()">
+            <span data-i18n="btn_print_book">🖨 پرینت کتاب</span>
+        </button>
+    </div>
 </div>
-                    <div style="padding-top:25px; display:flex; gap:10px">
-                        <button class="btn btn-outline" style="font-size:12px; flex:1" onclick="exportHawalaToExcel()">
-                            <span data-i18n="btn_excel">📊 اکسل عالی</span>
-                        </button>
-                        <button class="btn btn-outline" style="font-size:12px; flex:1" onclick="printHawalaList()">
-                            <span data-i18n="btn_print_book">🖨 پرینت کتاب</span>
-                        </button>
-                    </div>
-                </div>
             </div>
 <div class="card table-container" style="overflow-x:auto;">
                 <table>
@@ -1088,20 +1105,18 @@ html[dir="ltr"] .submenu {
     <div class="modal-content">
         <span class="close-icon" onclick="closeModal('modalEditHawala')">&times;</span>
         <div class="card-header">
-            <span data-i18n="modal_edit_hawala">ویرایش حواله</span> 
+            <span data-i18n="modal_edit_hawala">ویرایش کامل حواله (مدیریت)</span> 
             <span id="editHawalaId" style="color:var(--gold-primary)"></span>
         </div>
         
         <input type="hidden" id="editHId">
 
-        <div class="label" style="background: rgba(255, 82, 82, 0.1); color: var(--danger); padding: 5px; margin-bottom: 10px; border-radius: 4px;" data-i18n="msg_security_warning">توجه: تغییر مبلغ در حواله‌های اجرا شده، مستقیماً روی موجودی صندوق تاثیر می‌گذارد.</div>
-        
         <div class="grid-2">
             <div>
                 <label class="label" data-i18n="lbl_operation_type">نوع عملیات</label>
                 <select id="editHType" class="input">
-                    <option value="Outgoing" data-i18n="opt_outgoing_full">ارسال (به شهر دیگر)</option>
-                    <option value="Incoming" data-i18n="opt_incoming_full">دریافت (از شهر دیگر)</option>
+                    <option value="Outgoing">ارسال (Out)</option>
+                    <option value="Incoming">دریافت (In)</option>
                 </select>
             </div>
             <div>
@@ -1109,17 +1124,32 @@ html[dir="ltr"] .submenu {
                 <select id="editHCityBook" class="input"></select>
             </div>
         </div>
-        <div class="grid-2">
-            <div>
-                <label class="label" data-i18n="lbl_amount_fixed">مبلغ</label>
-                <input type="number" id="editHAmt" class="input">
+        
+        <div style="background:rgba(212,175,55,0.05); padding:10px; border-radius:10px; border:1px dashed var(--gold-primary); margin-bottom:15px;">
+            <div class="grid-2">
+                <div>
+                    <label class="label">مبلغ حواله (آزاد)</label>
+                    <input type="number" id="editHAmt" class="input" style="font-weight:bold; color:var(--text-main);">
+                </div>
+                <div>
+                    <label class="label">ارز حواله</label>
+                    <select id="editHCurr" class="input"></select>
+                </div>
             </div>
-            <div>
-                <label class="label" data-i18n="lbl_currency_fixed">ارز</label>
-                <select id="editHCurr" class="input"></select>
+            <div class="grid-2">
+                <div>
+                    <label class="label">مبلغ کمیشن</label>
+                    <input type="number" id="editHComm" class="input">
+                </div>
+                <div>
+                    <label class="label">ارز کمیشن</label>
+                    <select id="editHCommCurr" class="input"></select>
+                </div>
             </div>
         </div>
+
         <hr style="margin:10px 0; border:0; border-top:1px dashed var(--gold-border)">
+        
         <div class="grid-2">
             <div><label class="label" data-i18n="lbl_sender">نام فرستنده</label><input id="editHSender" class="input"></div>
             <div><label class="label" data-i18n="lbl_receiver">نام گیرنده</label><input id="editHReceiver" class="input"></div>
@@ -1128,12 +1158,13 @@ html[dir="ltr"] .submenu {
             <div><label class="label" data-i18n="lbl_phone">تلفن تماس</label><input id="editHPhone" class="input"></div>
             <div><label class="label" data-i18n="lbl_id_card">شماره تذکره/پاسپورت</label><input id="editHIDCard" class="input"></div>
         </div>
+        
         <div style="margin-top:15px; text-align:left">
             <button class="btn btn-outline" onclick="closeModal('modalEditHawala')">
                 <span data-i18n="btn_cancel">انصراف (Esc)</span>
             </button>
             <button class="btn btn-blue" onclick="submitEditHawala()">
-                <span data-i18n="btn_save_edit">ثبت ویرایش (F10)</span>
+                <span data-i18n="btn_save_edit">ثبت تغییرات و اصلاح صندوق (F10)</span>
             </button>
         </div>
     </div>
@@ -1364,55 +1395,64 @@ html[dir="ltr"] .submenu {
                         </div>
                     </div>
                 </div>
-
-                <div id="tab-cities" class="settings-tab">
-                    <div class="setting-card">
-                        <div class="setting-header-large">مدیریت شهرها و نمایندگان</div>
-                        <p style="color:var(--gold-primary); font-size:13px; margin-bottom:15px">
-                            * اطلاعات وارد شده در اینجا (نام صرافی/نماینده) مستقیماً در رسید چاپی حواله درج می‌شود.
-                        </p>
-                        
-                        <div class="city-detail-group">
-                            <div class="grid-2">
-                                <div>
-                                    <label class="label">نام شهر</label>
-                                    <input id="newCityName" class="input" placeholder="مثلاً: مزارشریف">
-                                </div>
-                                <div>
-                                    <label class="label">کد شهر (مخفف)</label>
-                                    <input id="newCityCode" class="input" placeholder="MZR" style="text-transform:uppercase">
-                                </div>
-                            </div>
-                            <div class="grid-2">
-                                <div>
-                                    <label class="label" style="color:var(--gold-primary)">نام نماینده / صرافی همکار</label>
-                                    <input id="newCityRep" class="input" placeholder="مثلاً: صرافی صداقت (حاجی احمد)">
-                                </div>
-                                <div>
-                                    <label class="label" style="color:var(--gold-primary)">آدرس / تلفن نماینده</label>
-                                    <input id="newCityContact" class="input" placeholder="مارکت... / 0799...">
-                                </div>
-                            </div>
-                            <button class="btn btn-gold" style="width:100%" onclick="addCity()">
-                                ثبت شهر و مشخصات نماینده
-                            </button>
-                        </div>
-
-                        <div style="margin-top:30px; border-top:1px dashed var(--gold-border); padding-top:20px">
-                            <label class="label" style="color:var(--danger)">حذف شهر</label>
-                            <div style="display:flex; gap:10px; align-items:flex-start">
-                                <div style="flex:1">
-                                    <select id="cityToDelete" class="input" onchange="checkCityForDelete()"></select>
-                                    <div id="transferCitySection" style="display:none; background:rgba(255,82,82,0.1); padding:10px; border-radius:8px; margin-top:5px">
-                                        <label class="label" style="color:var(--danger)">انتقال اطلاعات به:</label>
-                                        <select id="cityTransferTarget" class="input"></select>
-                                    </div>
-                                </div>
-                                <button id="btnDeleteCity" class="btn btn-red" onclick="deleteCityProcess()" style="height:45px">حذف</button>
-                            </div>
-                        </div>
-                    </div>
+<div id="tab-cities" class="settings-tab">
+    <div class="setting-card">
+        <div class="setting-header-large">مدیریت شهرها و نمایندگان</div>
+        
+        <div class="city-detail-group">
+            <input type="hidden" id="editCityOldCode"> <div class="grid-2">
+                <div>
+                    <label class="label">نام شهر</label>
+                    <input id="newCityName" class="input" placeholder="مثلاً: مزارشریف">
                 </div>
+                <div>
+                    <label class="label">کد شهر (مخفف)</label>
+                    <input id="newCityCode" class="input" placeholder="MZR" style="text-transform:uppercase">
+                </div>
+            </div>
+            <div class="grid-2">
+                <div>
+                    <label class="label" style="color:var(--gold-primary)">نام نماینده / صرافی همکار</label>
+                    <input id="newCityRep" class="input" placeholder="مثلاً: صرافی صداقت (حاجی احمد)">
+                </div>
+                <div>
+                    <label class="label" style="color:var(--gold-primary)">آدرس / تلفن نماینده (جهت چاپ در رسید)</label>
+                    <input id="newCityContact" class="input" placeholder="مارکت... / 0799...">
+                </div>
+            </div>
+            
+            <div style="display:flex; gap:10px;">
+                <button id="btnSaveCity" class="btn btn-gold" style="flex:1" onclick="saveCityProcess()">
+                    ثبت شهر جدید
+                </button>
+                <button id="btnCancelEditCity" class="btn btn-outline" style="display:none;" onclick="cancelCityEdit()">
+                    انصراف
+                </button>
+            </div>
+        </div>
+
+        <div style="margin-top:20px; border-top:1px dashed var(--gold-border); padding-top:15px;">
+            <label class="label">لیست شهرهای فعال</label>
+            <div id="cityListContainer" style="max-height:300px; overflow-y:auto; background:rgba(0,0,0,0.1); border-radius:8px;">
+                </div>
+        </div>
+
+        <div style="margin-top:30px; background:rgba(255,0,0,0.05); padding:15px; border-radius:10px; border:1px solid rgba(255,0,0,0.2)">
+             <label class="label" style="color:var(--danger)">حذف اضطراری شهر (در صورتی که حواله دارد)</label>
+             <div style="display:flex; gap:10px;">
+                 <div style="flex:1">
+                     <select id="cityToDelete" class="input" onchange="checkCityForDelete()"></select>
+                     <div id="transferCitySection" style="display:none; margin-top:5px">
+                         <label class="label" style="color:var(--danger)">انتقال اطلاعات به:</label>
+                         <select id="cityTransferTarget" class="input"></select>
+                     </div>
+                 </div>
+                 <button class="btn btn-red" onclick="deleteCityProcess()" style="height:45px">حذف شهر</button>
+             </div>
+        </div>
+
+    </div>
+</div>
 
                 <div id="tab-users" class="settings-tab">
                     <div class="setting-card">
@@ -3286,20 +3326,115 @@ async function execHawala(id) {
     }
 }
 
-async function submitEditHawala() {
-     const id = document.getElementById('editHId').value; const h = db.hawalas.find(x => x.id === id); if (!h) return;
-     h.cityBook = document.getElementById('editHCityBook').value; 
-h.type = document.getElementById('editHType').value;
-     h.amt = parseFloat(document.getElementById('editHAmt').value);
-     h.curr = document.getElementById('editHCurr').value;
-     h.sender = document.getElementById('editHSender').value; 
-     h.receiver = document.getElementById('editHReceiver').value; 
-     h.phone = document.getElementById('editHPhone').value; 
-     h.idCard = document.getElementById('editHIDCard').value;
-     logTx('حواله', `Edited Hawala ${h.displayId || id}`, `Edited Info`);
-     await saveDB(); closeModal('modalEditHawala'); filterHawala(); renderDashboard(); alert(`Saved.`);
+function openEditHawalaModal(id) {
+    // 1. بررسی دسترسی مدیر
+    if (!currentUser || !currentUser.perms.admin) {
+        alert("⛔ دسترسی غیرمجاز!\nویرایش مبالغ حواله و اصلاح صندوق فقط برای مدیریت (Admin) امکان‌پذیر است.");
+        return;
+    }
+
+    const h = db.hawalas.find(x => x.id === id); 
+    if (!h) return;
+    
+    // پر کردن فیلدها
+    document.getElementById('editHId').value = h.id; 
+    document.getElementById('editHawalaId').innerText = h.displayId || h.id; 
+    document.getElementById('editHType').value = h.type; 
+    document.getElementById('editHCityBook').value = h.cityBook; 
+    
+    // مقادیر مالی
+    document.getElementById('editHAmt').value = h.amt; 
+    document.getElementById('editHCurr').value = h.curr;
+    document.getElementById('editHComm').value = h.comm || 0;
+    
+    // پر کردن لیست ارز برای کمیشن و انتخاب ارز فعلی
+    const commCurrSelect = document.getElementById('editHCommCurr');
+    commCurrSelect.innerHTML = db.currencies.map(c => `<option value="${c}">${c}</option>`).join('');
+    commCurrSelect.value = h.commCurr || h.curr;
+
+    // سایر مشخصات
+    document.getElementById('editHSender').value = h.sender; 
+    document.getElementById('editHReceiver').value = h.receiver; 
+    document.getElementById('editHPhone').value = h.phone; 
+    document.getElementById('editHIDCard').value = h.idCard; 
+    
+    openModal('modalEditHawala');
 }
 
+async function submitEditHawala() {
+    // 1. بررسی دسترسی مدیر (لایه دوم امنیت)
+    if (!currentUser || !currentUser.perms.admin) {
+        alert("⛔ شما مجوز ذخیره این تغییرات را ندارید.");
+        return;
+    }
+
+    const id = document.getElementById('editHId').value;
+    const h = db.hawalas.find(x => x.id === id); 
+    if (!h) return;
+
+    // دریافت مقادیر جدید از فرم
+    const newAmt = parseFloat(document.getElementById('editHAmt').value) || 0;
+    const newCurr = document.getElementById('editHCurr').value;
+    const newComm = parseFloat(document.getElementById('editHComm').value) || 0;
+    const newCommCurr = document.getElementById('editHCommCurr').value;
+    const newType = document.getElementById('editHType').value;
+    
+    // ==========================================================
+    // مرحله 1: خنثی‌سازی (Revert) تاثیر حواله قدیمی از صندوق
+    // ==========================================================
+    // فقط اگر حواله داخلی (حساب مشتری) نباشد، روی صندوق تاثیر دارد
+    if (!h.isInternal) {
+        if (h.type === 'Outgoing') {
+            // قبلاً پول گرفته بودیم (مثبت بوده)، حالا باید کم کنیم تا اثرش پاک شود
+            db.cashBox[h.curr] = (db.cashBox[h.curr] || 0) - h.amt;
+            const oldCommCurr = h.commCurr || h.curr;
+            if(h.comm) db.cashBox[oldCommCurr] = (db.cashBox[oldCommCurr] || 0) - h.comm;
+            
+        } else if (h.type === 'Incoming' && h.status === 'Done') {
+            // قبلاً پول داده بودیم (منفی بوده)، حالا باید برگردانیم به صندوق
+            db.cashBox[h.curr] = (db.cashBox[h.curr] || 0) + h.amt;
+        }
+    }
+
+    // ==========================================================
+    // مرحله 2: بروزرسانی اطلاعات آبجکت حواله با مقادیر جدید
+    // ==========================================================
+    h.cityBook = document.getElementById('editHCityBook').value; 
+    h.type = newType;
+    h.amt = newAmt;
+    h.curr = newCurr;
+    h.comm = newComm;
+    h.commCurr = newCommCurr;
+    
+    h.sender = document.getElementById('editHSender').value; 
+    h.receiver = document.getElementById('editHReceiver').value; 
+    h.phone = document.getElementById('editHPhone').value; 
+    h.idCard = document.getElementById('editHIDCard').value;
+
+    // ==========================================================
+    // مرحله 3: اعمال (Apply) تاثیر مقادیر جدید روی صندوق
+    // ==========================================================
+    if (!h.isInternal) {
+        if (h.type === 'Outgoing') {
+            // حواله ارسالی جدید: دریافت پول از مشتری (اضافه به صندوق)
+            db.cashBox[newCurr] = (db.cashBox[newCurr] || 0) + newAmt;
+            db.cashBox[newCommCurr] = (db.cashBox[newCommCurr] || 0) + newComm;
+            
+        } else if (h.type === 'Incoming' && h.status === 'Done') {
+            // حواله دریافتی (اگر تسویه شده باشد): پرداخت پول به مشتری (کسر از صندوق)
+            db.cashBox[newCurr] = (db.cashBox[newCurr] || 0) - newAmt;
+        }
+    }
+
+    // ثبت لاگ
+    logTx('ویرایش حواله', `اصلاح حواله ${h.displayId || id} توسط مدیر`, `مبلغ جدید: ${newAmt} ${newCurr} | کمیشن: ${newComm}`);
+    
+    await saveDB(); 
+    closeModal('modalEditHawala'); 
+    filterHawala(); 
+    renderDashboard(); 
+    alert(`تغییرات با موفقیت ثبت شد و موجودی صندوق ${newCurr} اصلاح گردید.`);
+}
 async function deleteHawala(id) {
     if (!currentUser.perms.admin) return;
     const hIndex = db.hawalas.findIndex(x => x.id === id); if (hIndex === -1) return; const h = db.hawalas[hIndex];
@@ -3313,6 +3448,8 @@ async function deleteHawala(id) {
     db.hawalas.splice(hIndex, 1); logTx('حواله', `Deleted Hawala ${h.displayId || id}`, `Reversed: ${h.amt} ${h.curr}`);
     await saveDB(); filterHawala(); renderDashboard();
 }
+
+/* این تابع را کامل پاک کنید */
 function filterHawala() {
     const hasAccess = currentUser.perms.access_group_b || currentUser.perms.admin;
     const filterCity = document.getElementById('filterHCity').value;
@@ -3351,42 +3488,14 @@ function filterHawala() {
     }).join('');
 }
 
-function openEditHawalaModal(id) {
-    const h = db.hawalas.find(x => x.id === id); if (!h) return;
-    document.getElementById('editHId').value = h.id; document.getElementById('editHawalaId').innerText = h.displayId || h.id; document.getElementById('editHType').value = h.type; document.getElementById('editHCityBook').value = h.cityBook; document.getElementById('editHAmt').value = h.amt; document.getElementById('editHCurr').value = h.curr; document.getElementById('editHSender').value = h.sender; document.getElementById('editHReceiver').value = h.receiver; document.getElementById('editHPhone').value = h.phone; document.getElementById('editHIDCard').value = h.idCard; openModal('modalEditHawala');
-}
 
-function printH(id) {
-    const h = db.hawalas.find(x => x.id === id); 
-    if (!h) { alert('حواله یافت نشد.'); return; }
-    
-    const typeText = h.type === 'Outgoing' ? 'حواله صادره (Out)' : 'حواله وارده (In)';
-    const cityObj = db.cities.find(c => c.code === h.cityBook);
-    const cityName = cityObj ? cityObj.name : h.cityBook;
-    
-    let repInfoHTML = '';
-    if (cityObj && (cityObj.rep || cityObj.contact)) {
-        const label = h.type === 'Outgoing' ? 'نماینده مقصد:' : 'صرافی فرستنده:';
-        repInfoHTML = `<div style="margin-top:10px; background:#f0f0f0; padding:5px; border:1px dashed #999; font-size:10pt;"><div style="font-weight:bold">${label} ${cityObj.rep || ''}</div><div style="font-size:9pt">${cityObj.contact || ''}</div></div>`;
-    }
 
-    const amtInWords = numberToPersianWords(h.amt) + " " + h.curr;
-    const win = window.open('', '_blank', 'width=800,height=600');
-    
-    win.document.write(`<html><head><title>${typeText}</title><style>@page{size:A5 landscape;margin:10mm}body{font-family:'Vazirmatn',tahoma;direction:rtl;padding:0;margin:0;font-size:11pt;color:#000}.receipt{width:100%;max-width:95%;margin:0 auto;padding:15px;border:3px double #000;background:#ffffff}.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}.info-item{border-bottom:1px dotted #999;padding-bottom:5px;margin-bottom:5px;display:flex;justify-content:space-between}.info-item b{font-weight:bold}.amount-box{border:2px solid #000;padding:10px;text-align:center;margin-top:15px;background:#f9f9f9}.footer-grid{display:grid;grid-template-columns:1fr 1fr;margin-top:30px;text-align:center;font-size:10pt}</style></head><body>${getPrintHeaderHTML()}<div class="receipt"><div style="text-align:center;font-weight:bold;margin-bottom:15px;font-size:14pt;border-bottom:1px solid #000;padding-bottom:10px">رسید ${typeText} (کد: ${h.displayId || h.id})</div><div class="info-grid"><div class="info-item"><b>تاریخ:</b><span>${new Date(h.regDate).toLocaleDateString('fa-IR')}</span></div><div class="info-item"><b>طرف حساب:</b><span>${escapeHtml(cityName)}</span></div></div>${repInfoHTML}<div class="info-grid" style="margin-top:10px"><div class="info-item"><b>فرستنده:</b><span>${escapeHtml(h.sender)}</span></div><div class="info-item"><b>گیرنده:</b><span>${escapeHtml(h.receiver)}</span></div></div><div class="info-grid"><div class="info-item"><b>تلفن:</b><span>${escapeHtml(h.phone || '-')}</span></div><div class="info-item"><b>آیدی/تذکره:</b><span>${escapeHtml(h.idCard || '-')}</span></div></div><div class="amount-box"><div>مبلغ حواله:</div><b dir="ltr" style="font-size:16pt;">${h.amt.toLocaleString()} ${h.curr}</b><div style="font-weight:bold;margin-top:5px;font-size:12px">حروف: ${amtInWords}</div></div><div class="footer-grid"><div>امضاء مشتری</div><div>مهر و امضاء صرافی</div></div></div></body></html>`);
-    win.document.close(); win.print();
-}
 
-function printHawalaList() {
-    const filterCity = document.getElementById('filterHCity').value; const filterType = document.getElementById('filterHType').value; const filterStatus = document.getElementById('filterHStatus').value;
-    const filteredHawalas = db.hawalas.filter(h => (filterCity === 'All' || h.cityBook === filterCity) && (filterType === 'All' || h.type === filterType) && (filterStatus === 'All' || h.status === filterStatus)).sort((a, b) => b.regDate - a.regDate);
-    const t = TRANSLATIONS[currentLang];
-    let printableBody = filteredHawalas.map(h => `<tr><td style="font-weight:bold;text-align:center">${h.displayId||h.id}</td><td>${escapeHtml(h.sender)}</td><td>${escapeHtml(h.receiver)}</td><td dir="ltr" style="text-align:center">${h.amt.toLocaleString()} ${h.curr}</td></tr>`).join('');
-    const win = window.open('', '_blank', 'width=1100,height=800'); 
-    const dir = t.dir;
-    win.document.write(`<html><head><title>Book</title><style>table{width:100%;border-collapse:collapse;font-family:'Vazirmatn','Tahoma';direction:${dir}}th,td{border:1px solid #000;padding:5px;text-align:${dir==='rtl'?'right':'left'}}@page{size:A4 landscape}</style></head><body>${getPrintHeaderHTML()}<h3>${t.header_hawala_manage || 'Book'}</h3><table><thead><tr><th>${t.th_hawala_no}</th><th>${t.lbl_sender}</th><th>${t.lbl_receiver}</th><th>${t.th_amount}</th></tr></thead><tbody>${printableBody}</tbody></table></body></html>`);
-    win.document.close(); win.print();
-}
+
+
+
+
+
 
 function setTTType(type) { 
     ttType = type; 
@@ -3922,21 +4031,42 @@ function printH(id) {
     const h = db.hawalas.find(x => x.id === id); 
     if (!h) { alert('حواله یافت نشد.'); return; }
     
-    // پیدا کردن اطلاعات شهر برای استخراج نام نماینده
+    // پیدا کردن اطلاعات شهر برای استخراج نام نماینده و تماس
     const cityObj = db.cities.find(c => c.code === h.cityBook);
+    // نام نماینده (مثلاً صرافی صداقت)
     const repName = cityObj && cityObj.rep ? cityObj.rep : '---';
+    // آدرس و تلفن نماینده
+    const repContact = cityObj && cityObj.contact ? cityObj.contact : ''; 
     const cityName = cityObj ? cityObj.name : h.cityBook;
 
-    // تبدیل مبلغ به حروف
     const amtInWords = numberToPersianWords(h.amt) + " " + h.curr;
     const win = window.open('', '_blank', 'width=1000,height=1200');
     
     let content = '';
 
     if (h.type === 'Outgoing') {
+        // --- اصلاح شده: اضافه شدن مشخصات صرافی اجرا کننده در پایین رسید ---
         content = `
         <html><head><title>${h.displayId}</title>
-        <style>@page { size: 80mm auto; margin: 0; } body { font-family: 'Vazirmatn', Tahoma; direction: rtl; padding: 5px; font-size: 10pt; width: 78mm; } .line { display: flex; justify-content: space-between; border-bottom: 1px dashed #000; padding: 3px 0; } .center { text-align: center; } .big { font-size: 14pt; font-weight: bold; }</style>
+        <style>
+            @page { size: 80mm auto; margin: 0; } 
+            body { font-family: 'Vazirmatn', Tahoma; direction: rtl; padding: 10px 5px; font-size: 10pt; width: 78mm; } 
+            .line { display: flex; justify-content: space-between; border-bottom: 1px dashed #ccc; padding: 5px 0; } 
+            .center { text-align: center; } 
+            .big { font-size: 14pt; font-weight: bold; }
+            .footer-rep { 
+                margin-top: 15px; 
+                border-top: 2px solid #000; 
+                padding-top: 5px; 
+                text-align: center; 
+                background: #f0f0f0; 
+                border-radius: 5px; 
+                padding: 10px;
+            }
+            .rep-label { font-size: 9pt; font-weight: bold; margin-bottom: 5px; }
+            .rep-val { font-size: 11pt; font-weight: 900; }
+            .rep-addr { font-size: 9pt; margin-top: 5px; }
+        </style>
         </head><body>
             ${getPrintHeaderHTML()}
             <div class="center">رسید ارسال حواله</div>
@@ -3947,10 +4077,22 @@ function printH(id) {
             <div class="line"><span>مقصد:</span><span>${cityName}</span></div>
             <div class="line"><span>مبلغ:</span><span class="big" dir="ltr">${h.amt.toLocaleString()} ${h.curr}</span></div>
             <div class="line"><span>کمیشن:</span><span>${h.comm} ${h.commCurr || h.curr}</span></div>
-            <div style="text-align:center; margin-top:10px; font-size:9pt;">${amtInWords}</div><br>
-            <div class="center">امضاء فرستنده / متصدی</div><br><br>.
+            <div style="text-align:center; margin-top:10px; font-size:9pt; font-weight:bold;">${amtInWords}</div><br>
+            
+            <div style="display:flex; justify-content:space-between; margin-top:20px; margin-bottom:20px;">
+                 <div style="text-align:center; width:45%;">امضاء مشتری</div>
+                 <div style="text-align:center; width:45%;">امضاء متصدی</div>
+            </div>
+
+            <div class="footer-rep">
+                <div class="rep-label">صرافی/نماینده اجرا کننده در ${cityName}:</div>
+                <div class="rep-val">${repName}</div>
+                <div class="rep-addr">${repContact}</div>
+            </div>
+            <br>.
         </body></html>`;
     } else {
+        // --- رسید حواله دریافتی (بدون تغییر) ---
         content = `
         <!DOCTYPE html>
         <html lang="fa" dir="rtl">
@@ -3965,21 +4107,35 @@ function printH(id) {
                 .header-section { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 25px; }
                 .doc-title { font-size: 24px; font-weight: 900; color: #000; letter-spacing: -1px; border: 2px solid #000; padding: 8px 30px; border-radius: 50px; background: #fff; }
                 .meta-info { text-align: left; font-size: 13px; line-height: 1.6; }
-                .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px; }
+                .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 20px; }
                 .info-box { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 15px; }
                 .box-header { font-size: 14px; font-weight: 900; color: #555; border-bottom: 1px dashed #ddd; padding-bottom: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; }
                 .row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; }
                 .label { color: #777; font-weight: 500; }
                 .value { font-weight: 700; color: #000; }
-                .amount-panel { background: #f4f4f4; border-radius: 12px; padding: 20px; text-align: center; border: 1px solid #ddd; margin-bottom: 40px; }
-                .amt-label { font-size: 14px; color: #666; margin-bottom: 5px; }
-                .amt-digit { font-size: 32px; font-weight: 900; font-family: 'Courier New', monospace; color: #000; direction: ltr; letter-spacing: 1px; }
-                .amt-text { font-size: 16px; font-weight: 700; margin-top: 5px; color: #333; }
+                .amount-panel { background: #f4f4f4; border-radius: 10px; padding: 12px 25px; text-align: center; border: 1px solid #ccc; margin-bottom: 30px; }
+                .amount-row-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+                .amt-label { font-size: 13px; color: #666; font-weight:bold; }
+                .amt-digit { font-size: 24px; font-weight: 900; font-family: 'Courier New', monospace; color: #000; direction: ltr; letter-spacing: 1px; }
+                .amt-text { font-size: 14px; font-weight: bold; color: #333; border-top: 1px dashed #bbb; padding-top: 5px; margin-top: 2px; }
                 .footer-grid { display: flex; justify-content: space-around; margin-top: 20px; }
                 .sign-box { text-align: center; width: 200px; }
                 .sign-title { font-weight: bold; font-size: 14px; margin-bottom: 60px; }
                 .sign-line { border-top: 1px solid #000; width: 100%; display: block; }
-                .rep-footer { margin-top: 20px; padding-top: 15px; border-top: 1px dashed #ccc; text-align: center; font-size: 12px; color: #444; background: #fff; }
+                
+                .rep-footer { 
+                    margin-top: 20px; 
+                    padding-top: 10px; 
+                    border-top: 1px dashed #ccc; 
+                    text-align: center; 
+                    font-size: 12px; 
+                    color: #444; 
+                    background: #fdfdfd;
+                    border-radius: 0 0 10px 10px;
+                }
+                .rep-name { font-weight: 900; font-size: 14px; color: #000; }
+                .rep-contact { font-size: 11px; margin-top: 3px; color: #555; }
+                
                 @media print { body { -webkit-print-color-adjust: exact; } }
             </style>
         </head>
@@ -4016,8 +4172,10 @@ function printH(id) {
                 </div>
 
                 <div class="amount-panel">
-                    <div class="amt-label">مبلغ دریافتی / AMOUNT RECEIVED</div>
-                    <div class="amt-digit">*** ${h.amt.toLocaleString()} ${h.curr} ***</div>
+                    <div class="amount-row-top">
+                        <span class="amt-label">مبلغ دریافتی / AMOUNT RECEIVED</span>
+                        <span class="amt-digit">*** ${h.amt.toLocaleString()} ${h.curr} ***</span>
+                    </div>
                     <div class="amt-text">${amtInWords}</div>
                 </div>
 
@@ -4033,7 +4191,8 @@ function printH(id) {
                 </div>
 
                 <div class="rep-footer">
-                    حواله وارده از طرف: <span style="font-weight:900; font-size:14px; color:#000;">${repName}</span>
+                    حواله وارده از طرف: <span class="rep-name">${repName}</span>
+                    <div class="rep-contact">${repContact}</div>
                 </div>
             </div>
         </body>
@@ -4044,7 +4203,7 @@ function printH(id) {
     win.document.close(); 
     win.print();
 }
-
+ 
 function printCurrentTTForm() {
     const amt = document.getElementById('ttAmt').value; const curr = document.getElementById('ttCurr').value; const amtWords = document.getElementById('ttAmtWords').value; const benName = document.getElementById('ttBenName').value; const benNameEn = document.getElementById('ttBenNameEn').value; const country = document.getElementById('ttCountry').value; const city = document.getElementById('ttCityDest').value; const address = document.getElementById('ttAddress').value; const bank = document.getElementById('ttDestBank').value; const swift = document.getElementById('ttSwift').value; const iban = document.getElementById('ttIban').value; const ref = document.getElementById('ttRef').value || '---';
     if (!amt || !benName) { alert('لطفاً ابتدا فرم را پر کنید.'); return; }
@@ -4987,19 +5146,26 @@ function renderInitialCapitalInputs() {
 }
 
 window.switchSettingsTab = function(tabId, btn) {
+    // غیرفعال کردن تب‌های قبلی
     document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.settings-menu-btn').forEach(b => b.classList.remove('active'));
     
+    // فعال کردن تب جدید
     const target = document.getElementById(tabId);
     if(target) target.classList.add('active');
     
     if(btn) btn.classList.add('active');
 
+    // اگر تب سرمایه اولیه بود، اینپوت‌ها را بساز
     if (tabId === 'tab-capital') {
         renderInitialCapitalInputs();
     }
-};
 
+    // *** (مهم) اگر تب شهرها بود، لیست شهرها را بساز ***
+    if (tabId === 'tab-cities') {
+        renderCityList();
+    }
+};
 function renderCommissionCalc() {
     let cityData = {};
     db.hawalas.forEach(h => {
@@ -5348,7 +5514,129 @@ function renderCommodities(goldPrice) {
     else html += `<div class="rate-card"><span class="rate-title">GOLD</span><div class="rate-price" style="font-size:12px; color:orange">Check API</div></div>`;
     box.innerHTML = html;
 }
+// تابع رندر کردن لیست شهرها با دکمه ویرایش
+function renderCityList() {
+    const container = document.getElementById('cityListContainer');
+    if(!container) return;
+    
+    if(db.cities.length === 0) {
+        container.innerHTML = '<div style="padding:10px; text-align:center; color:gray;">شهری ثبت نشده است</div>';
+        return;
+    }
 
+    container.innerHTML = db.cities.map(c => `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid var(--gold-border); background:rgba(255,255,255,0.02);">
+            <div>
+                <div style="font-weight:bold; color:var(--text-main);">${c.name} <span style="font-size:11px; color:var(--gold-primary);">(${c.code})</span></div>
+                <div style="font-size:11px; opacity:0.8;">${c.rep || '-'}</div>
+                <div style="font-size:10px; color:var(--text-muted);">${c.contact || ''}</div>
+            </div>
+            <div style="display:flex; gap:5px;">
+                <button class="btn btn-outline btn-sm" onclick="prepareEditCity('${c.code}')">✏️ ویرایش</button>
+                <button class="btn btn-red btn-sm" onclick="deleteSimpleCity('${c.code}')">🗑</button>
+            </div>
+        </div>
+    `).join('');
+    
+    // آپدیت کردن دراپ‌داون‌های حذف و انتخاب
+    updateUI(); 
+}
+
+// آماده‌سازی فرم برای ویرایش
+function prepareEditCity(code) {
+    const city = db.cities.find(c => c.code === code);
+    if(!city) return;
+
+    document.getElementById('newCityName').value = city.name;
+    document.getElementById('newCityCode').value = city.code;
+    document.getElementById('newCityRep').value = city.rep || '';
+    document.getElementById('newCityContact').value = city.contact || '';
+    
+    // ذخیره کد قدیمی برای شناسایی در هنگام ذخیره
+    document.getElementById('editCityOldCode').value = city.code;
+    
+    // تغییر دکمه‌ها
+    const btnSave = document.getElementById('btnSaveCity');
+    btnSave.innerText = "💾 ذخیره تغییرات";
+    btnSave.classList.remove('btn-gold');
+    btnSave.classList.add('btn-blue');
+    
+    document.getElementById('btnCancelEditCity').style.display = 'inline-block';
+}
+
+// انصراف از ویرایش
+function cancelCityEdit() {
+    document.getElementById('newCityName').value = '';
+    document.getElementById('newCityCode').value = '';
+    document.getElementById('newCityRep').value = '';
+    document.getElementById('newCityContact').value = '';
+    document.getElementById('editCityOldCode').value = '';
+    
+    const btnSave = document.getElementById('btnSaveCity');
+    btnSave.innerText = "ثبت شهر جدید";
+    btnSave.classList.add('btn-gold');
+    btnSave.classList.remove('btn-blue');
+    
+    document.getElementById('btnCancelEditCity').style.display = 'none';
+}
+
+// تابع اصلی ذخیره (هم برای جدید و هم ویرایش)
+async function saveCityProcess() {
+    const name = document.getElementById('newCityName').value.trim();
+    const code = document.getElementById('newCityCode').value.trim().toUpperCase();
+    const rep = document.getElementById('newCityRep').value.trim();
+    const contact = document.getElementById('newCityContact').value.trim();
+    const oldCode = document.getElementById('editCityOldCode').value;
+
+    if (!name || !code) { alert("نام و کد شهر الزامی است"); return; }
+
+    if (oldCode) {
+        // --- حالت ویرایش ---
+        const index = db.cities.findIndex(c => c.code === oldCode);
+        if (index !== -1) {
+            db.cities[index] = { name, code, rep, contact };
+            
+            // اگر کد شهر عوض شده باشد، باید تمام حواله‌های قبلی هم آپدیت شوند
+            if (oldCode !== code) {
+                db.hawalas.forEach(h => {
+                    if (h.cityBook === oldCode) h.cityBook = code;
+                });
+                
+                // کانترها هم باید منتقل شوند
+                if(db.cityHawalaCounters[oldCode]) {
+                    db.cityHawalaCounters[code] = db.cityHawalaCounters[oldCode];
+                    delete db.cityHawalaCounters[oldCode];
+                }
+            }
+            alert("مشخصات شهر/نماینده ویرایش شد.");
+        }
+    } else {
+        // --- حالت جدید ---
+        if (db.cities.some(c => c.code === code)) { alert("این کد شهر قبلاً ثبت شده است!"); return; }
+        
+        db.cities.push({ name, code, rep, contact });
+        db.cityHawalaCounters[code] = { Outgoing: 1001, Incoming: 1001 };
+        alert("شهر جدید اضافه شد.");
+    }
+
+    await saveDB();
+    cancelCityEdit(); // پاک کردن فرم
+    renderCityList(); // بازسازی لیست
+}
+
+// حذف ساده (اگر حواله نداشته باشد)
+async function deleteSimpleCity(code) {
+    const hasData = db.hawalas.some(h => h.cityBook === code);
+    if(hasData) {
+        alert("این شهر دارای تراکنش است و نمی‌توانید سریع حذف کنید. از بخش حذف اضطراری پایین صفحه استفاده کنید.");
+        return;
+    }
+    if(!confirm("آیا از حذف این شهر اطمینان دارید؟")) return;
+    
+    db.cities = db.cities.filter(c => c.code !== code);
+    await saveDB();
+    renderCityList();
+}
 </script>
 </body>
 </html>
