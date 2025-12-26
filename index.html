@@ -5,8 +5,13 @@
 <title>System</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;300;400;500;700;900&display=swap" rel="stylesheet">
-<script src="xlsx.full.min.js"></script>
-<script src="crypto-js.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
 <style>
 :root {
     --bg-body: #003035;
@@ -288,7 +293,114 @@ html[dir="ltr"] .submenu {
         margin: 0 auto 10px auto;
     }
 }
+/* --- استایل دکمه سبز اکسل --- */
+@keyframes pulse-green {
+    0% { box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.7); transform: scale(1); }
+    70% { box-shadow: 0 0 0 10px rgba(0, 230, 118, 0); transform: scale(1.05); }
+    100% { box-shadow: 0 0 0 0 rgba(0, 230, 118, 0); transform: scale(1); }
+}
+.btn-excel-pulse {
+    background: linear-gradient(45deg, #059669, #34d399);
+    color: white;
+    font-weight: 900;
+    border: 2px solid #fff;
+    animation: pulse-green 2s infinite;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+}
+.btn-excel-pulse:hover {
+    animation: none;
+    transform: scale(1.05);
+}
 
+/* ================================================= */
+/* شروع تنظیمات مخصوص موبایل (App Design)           */
+/* ================================================= */
+.mobile-nav, .fab-btn, #fabMenu { display: none !important; } /* پیش‌فرض مخفی */
+
+@media screen and (max-width: 768px) {
+    /* 1. حذف اجزای دسکتاپ در موبایل */
+    .sidebar { display: none !important; }
+    .theme-switch { top: 15px; left: 15px; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); }
+    #printHeaderGlobal { display: none; }
+
+    /* 2. تنظیم بدنه اصلی برای موبایل */
+    body { background-color: #0f172a; } /* رنگ پس‌زمینه اپلیکیشن */
+    .content {
+        margin: 0 !important;
+        width: 100% !important;
+        padding: 15px !important;
+        padding-bottom: 100px !important; /* فضای خالی پایین برای منو */
+    }
+
+    /* 3. منوی پایین شیشه‌ای (Glassmorphism) */
+    .mobile-nav {
+        display: flex !important;
+        position: fixed;
+        bottom: 20px; left: 15px; right: 15px;
+        height: 70px;
+        background: rgba(15, 23, 42, 0.85); /* سرمه‌ای تیره شفاف */
+        backdrop-filter: blur(12px); /* تار کردن پشت زمینه */
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 25px;
+        justify-content: space-around;
+        align-items: center;
+        z-index: 9999;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    .m-nav-item {
+        background: transparent; border: none;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        color: #64748b; font-size: 10px; font-weight: bold; gap: 4px;
+        width: 60px; height: 100%; transition: 0.3s;
+    }
+    .m-nav-item .m-icon { font-size: 24px; margin-bottom: 2px; display: block; }
+    
+    /* دکمه فعال */
+    .m-nav-item.active { color: #fbbf24; transform: translateY(-5px); }
+    .m-nav-item.active .m-icon { filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.6)); }
+
+    /* 4. دکمه شناور طلایی وسط (+) */
+    .fab-btn {
+        display: flex !important; align-items: center; justify-content: center;
+        width: 60px; height: 60px;
+        background: linear-gradient(135deg, #fbbf24, #b45309);
+        border-radius: 50%;
+        position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%);
+        border: 5px solid #0f172a; /* حاشیه همرنگ پس‌زمینه */
+        color: #000; font-size: 32px; font-weight: bold;
+        z-index: 10000;
+        box-shadow: 0 5px 20px rgba(251, 191, 36, 0.4);
+        cursor: pointer;
+    }
+    .fab-btn:active { transform: translateX(-50%) scale(0.9); }
+
+    /* 5. منوی مخفی پلاس */
+    #fabMenu {
+        position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%);
+        width: 90%; max-width: 300px;
+        background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(15px);
+        border: 1px solid rgba(251, 191, 36, 0.3);
+        border-radius: 20px; padding: 15px;
+        display: none; flex-direction: column; gap: 10px;
+        z-index: 10000; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    }
+
+    /* 6. استایل کارت‌ها و جداول در موبایل */
+    .card {
+        border-radius: 20px !important;
+        background: rgba(30, 41, 59, 0.7) !important; /* کارت‌های نیمه شفاف */
+        border: 1px solid rgba(255,255,255,0.05) !important;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2) !important;
+        padding: 15px !important;
+    }
+    .input, select.input, .btn { height: 50px !important; font-size: 16px !important; border-radius: 12px !important; }
+    .table-container { overflow-x: auto; border-radius: 12px; }
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr !important; gap: 15px !important; }
+    .header-bar { flex-direction: column; align-items: flex-start; gap: 10px; }
+    h2#pageTitle { font-size: 24px !important; border: none !important; }
+}
+/* ================================================= */
 </style>
 </head>
 <body>
@@ -383,6 +495,30 @@ html[dir="ltr"] .submenu {
             </button>
         </div>
     </div>
+<div class="mobile-nav no-print">
+    <button class="m-nav-item active" onclick="go('dashboard')" id="mn-dash">
+        <span class="m-icon">📊</span><span>خانه</span>
+    </button>
+    <button class="m-nav-item" onclick="go('hawala')" id="mn-hawala">
+        <span class="m-icon">✈️</span><span>حواله</span>
+    </button>
+    <div style="width:50px"></div>
+    <button class="m-nav-item" onclick="go('accounts')" id="mn-acc">
+        <span class="m-icon">👥</span><span>حساب‌ها</span>
+    </button>
+    <button class="m-nav-item" onclick="openSettings()" id="mn-set">
+        <span class="m-icon">⚙️</span><span>منو</span>
+    </button>
+</div>
+
+<div class="fab-btn no-print" onclick="toggleFab()">+</div>
+
+<div id="fabMenu" style="position:fixed; bottom:100px; left:50%; transform:translateX(-50%); z-index:10001; background:rgba(30,41,59,0.95); padding:15px; border-radius:15px; border:1px solid #fbbf24; display:none;">
+    <div style="display:flex; gap:10px;">
+        <button onclick="go('hawala');toggleFab()" class="btn">حواله جدید</button>
+        <button onclick="go('accounts');toggleFab()" class="btn">مشتری جدید</button>
+    </div>
+</div>
 <div class="content">
         <div class="header-bar" style="display:flex; justify-content:space-between; margin-bottom:30px; align-items: center;">
             <h2 id="pageTitle" style="border-right:5px solid var(--gold-primary); padding-right:20px; color:var(--gold-primary); font-size: 30px; font-weight: 900;" data-i18n="nav_dashboard">داشبورد</h2>
@@ -899,13 +1035,25 @@ html[dir="ltr"] .submenu {
 </div>
 <div id="reports" class="page admin-only-view">
     <div class="card" style="margin-bottom:15px">
-        <div class="card-header"><span data-i18n="header_backup">پشتیبان‌گیری (Backup)</span></div>
-        <div style="display:flex; gap:15px">
-            <button class="btn btn-blue" onclick="exportDB()">
-                <span data-i18n="btn_download_backup">⬇️ دانلود بک‌آپ کامل</span>
+        <div class="card-header">
+            <span data-i18n="header_backup">پشتیبان‌گیری و خروجی (Backup & Export)</span>
+        </div>
+        <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; margin-bottom:15px; font-size:12px; color:var(--text-muted)">
+            ۱. <b>فایل سیستمی (JSON):</b> مخصوص بازگردانی اطلاعات وقتی ویندوز عوض می‌کنید.<br>
+            ۲. <b>فایل اکسل (Excel):</b> مخصوص چاپ کردن و نگهداری در بایگانی دفتری.
+        </div>
+        
+        <div class="grid-3">
+            <button class="btn btn-blue" onclick="exportDB()" style="height:50px">
+                <span data-i18n="btn_download_backup">⬇️ دانلود فایل سیستم (JSON)</span>
             </button>
-            <button class="btn btn-gold" onclick="importDB()">
-                <span data-i18n="btn_restore_backup">⬆️ بازیابی بک‌آپ (Restore)</span>
+            
+            <button class="btn btn-gold" onclick="importDB()" style="height:50px">
+                <span data-i18n="btn_restore_backup">⬆️ بازگردانی سیستم (Upload)</span>
+            </button>
+
+            <button class="btn btn-excel-pulse" onclick="fullExcelBackup()" style="height:50px">
+                <span>📊 دانلود گزارش کامل اکسل</span>
             </button>
         </div>
     </div>
@@ -1027,6 +1175,7 @@ html[dir="ltr"] .submenu {
         </div>
     </div>
 </div>
+
 <div id="modalEditHawala" class="modal">
     <div class="modal-content">
         <span class="close-icon" onclick="closeModal('modalEditHawala')">&times;</span>
@@ -1039,59 +1188,57 @@ html[dir="ltr"] .submenu {
 
         <div class="grid-2">
             <div>
-                <label class="label" data-i18n="lbl_operation_type">نوع عملیات</label>
+                <label class="label">نوع عملیات</label>
                 <select id="editHType" class="input">
                     <option value="Outgoing">ارسال (Out)</option>
                     <option value="Incoming">دریافت (In)</option>
                 </select>
             </div>
             <div>
-                <label class="label" data-i18n="lbl_city_book">کتاب شهر</label>
+                <label class="label">کتاب شهر</label>
                 <select id="editHCityBook" class="input"></select>
             </div>
         </div>
         
         <div style="background:rgba(212,175,55,0.05); padding:10px; border-radius:10px; border:1px dashed var(--gold-primary); margin-bottom:15px;">
             <div class="grid-2">
-                <div>
-                    <label class="label">مبلغ حواله (آزاد)</label>
-                    <input type="number" id="editHAmt" class="input" style="font-weight:bold; color:var(--text-main);">
-                </div>
-                <div>
-                    <label class="label">ارز حواله</label>
-                    <select id="editHCurr" class="input"></select>
-                </div>
+                <div><label class="label">مبلغ حواله</label><input type="number" id="editHAmt" class="input"></div>
+                <div><label class="label">ارز حواله</label><select id="editHCurr" class="input"></select></div>
             </div>
             <div class="grid-2">
-                <div>
-                    <label class="label">مبلغ کمیشن</label>
-                    <input type="number" id="editHComm" class="input">
-                </div>
-                <div>
-                    <label class="label">ارز کمیشن</label>
-                    <select id="editHCommCurr" class="input"></select>
-                </div>
+                <div><label class="label">مبلغ کمیشن</label><input type="number" id="editHComm" class="input"></div>
+                <div><label class="label">ارز کمیشن</label><select id="editHCommCurr" class="input"></select></div>
             </div>
         </div>
 
         <hr style="margin:10px 0; border:0; border-top:1px dashed var(--gold-border)">
         
-        <div class="grid-2">
-            <div><label class="label" data-i18n="lbl_sender">نام فرستنده</label><input id="editHSender" class="input"></div>
-            <div><label class="label" data-i18n="lbl_receiver">نام گیرنده</label><input id="editHReceiver" class="input"></div>
+        <div style="background:rgba(255,255,255,0.02); padding:10px; border-radius:8px; margin-bottom:10px;">
+            <label class="label" style="color:var(--gold-primary)">مشخصات فرستنده</label>
+            <div class="grid-3">
+                <div><label class="label">نام</label><input id="editHSender" class="input"></div>
+                <div><label class="label">تخلص</label><input id="editHSenderLast" class="input"></div>
+                <div><label class="label">نام پدر</label><input id="editHSenderFather" class="input"></div>
+            </div>
         </div>
+
+        <div style="background:rgba(255,255,255,0.02); padding:10px; border-radius:8px; margin-bottom:10px;">
+            <label class="label" style="color:#42a5f5">مشخصات گیرنده</label>
+            <div class="grid-3">
+                <div><label class="label">نام</label><input id="editHReceiver" class="input"></div>
+                <div><label class="label">تخلص</label><input id="editHReceiverLast" class="input"></div>
+                <div><label class="label">نام پدر</label><input id="editHReceiverFather" class="input"></div>
+            </div>
+        </div>
+
         <div class="grid-2">
-            <div><label class="label" data-i18n="lbl_phone">تلفن تماس</label><input id="editHPhone" class="input"></div>
-            <div><label class="label" data-i18n="lbl_id_card">شماره تذکره/پاسپورت</label><input id="editHIDCard" class="input"></div>
+            <div><label class="label">تلفن تماس</label><input id="editHPhone" class="input"></div>
+            <div><label class="label">شماره تذکره/ID</label><input id="editHIDCard" class="input"></div>
         </div>
         
         <div style="margin-top:15px; text-align:left">
-            <button class="btn btn-outline" onclick="closeModal('modalEditHawala')">
-                <span data-i18n="btn_cancel">انصراف (Esc)</span>
-            </button>
-            <button class="btn btn-blue" onclick="submitEditHawala()">
-                <span data-i18n="btn_save_edit">ثبت تغییرات و اصلاح صندوق (F10)</span>
-            </button>
+            <button class="btn btn-outline" onclick="closeModal('modalEditHawala')">انصراف (Esc)</button>
+            <button class="btn btn-blue" onclick="submitEditHawala()">ثبت تغییرات (F10)</button>
         </div>
     </div>
 </div>
@@ -2300,45 +2447,137 @@ function applyTranslations() {
 }
 
 class DBAdapter {
-    constructor(dbName, version) { this.dbName = dbName; this.version = version; this.db = null; }
+    constructor() {
+        const firebaseConfig = {
+            apiKey: "AIzaSyDNHTnLU10FDcvr95YFBk9el5AXaiPg8OA",
+            authDomain: "heratexchang.firebaseapp.com",
+            projectId: "heratexchang",
+            storageBucket: "heratexchang.firebasestorage.app",
+            messagingSenderId: "6448674064",
+            appId: "1:6448674064:web:50aab04aaf80b14644a195",
+            measurementId: "G-ZL2GBTDYKX"
+        };
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        this.db = firebase.firestore();
+        this.collectionName = 'Herat_Exchange_V2'; 
+    }
+
     async init() {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(this.dbName, this.version);
-            request.onupgradeneeded = (event) => {
-                const db = event.target.result;
-                // در اینجا employees و employeeLedger اضافه شدند
-                ['users', 'customers', 'cashBox', 'currencies', 'hawalas', 'accounts', 'journal', 'cities', 'initialCapital', 'cityHawalaCounters', 'fxProfit', 'settings', 'employees', 'employeeLedger'].forEach(store => {
-                    if (!db.objectStoreNames.contains(store)) db.createObjectStore(store);
-                });
-            };
-            request.onsuccess = (e) => { this.db = e.target.result; resolve(); };
-            request.onerror = (e) => reject(e.target.error);
-        });
+        console.log("Firebase Connected (V2 - Optimized Mode)");
+        try {
+            await this.db.enablePersistence({ synchronizeTabs: true });
+        } catch (err) {
+            console.log("Persistence note:", err.code);
+        }
+        return true;
     }
+
     async loadAll() {
-        const data = {};
-        // در اینجا هم اضافه شدند
-        const stores = ['users', 'customers', 'cashBox', 'currencies', 'hawalas', 'accounts', 'journal', 'cities', 'initialCapital', 'cityHawalaCounters', 'fxProfit', 'settings', 'employees', 'employeeLedger'];
-        const tx = this.db.transaction(stores, 'readonly');
-        const promises = stores.map(store => new Promise(resolve => {
-            const req = tx.objectStore(store).get('root');
-            req.onsuccess = (e) => resolve({ [store]: e.target.result });
-            req.onerror = () => resolve({ [store]: null });
-        }));
-        (await Promise.all(promises)).forEach(res => Object.assign(data, res));
-        return data;
+        const data = { hawalas: [], accounts: {}, journal: [] };
+        
+        try {
+            // 1. دریافت اطلاعات عمومی (شامل لیست نام مشتریان، تنظیمات و...)
+            // این فقط 1 بار خواندن (Read) از سرور مصرف می‌کند
+            const docRef = this.db.collection(this.collectionName).doc('General_Data');
+            const doc = await docRef.get();
+            if (doc.exists) {
+                const loaded = doc.data();
+                ['users', 'customers', 'cashBox', 'currencies', 'cities', 'initialCapital', 'cityHawalaCounters', 'fxProfit', 'settings', 'employees', 'employeeLedger'].forEach(k => {
+                    if (loaded[k]) data[k] = loaded[k];
+                });
+            }
+
+            // *** تغییر مهم: حذف حلقه دریافت اکانت‌ها ***
+            // ما دیگر اینجا اکانت‌ها را دانلود نمی‌کنیم تا سقف فایربیس پر نشود.
+            
+            // 2. دریافت ژورنال (محدود به 50 لاگ آخر برای سرعت)
+            const logSnapshot = await this.db.collection(this.collectionName + '_Journal')
+                                         .orderBy('time', 'desc').limit(50).get();
+            logSnapshot.forEach(doc => {
+                data.journal.push(doc.data());
+            });
+
+            // 3. دریافت حواله‌ها (محدود به 100 حواله آخر)
+            const hawalaSnapshot = await this.db.collection(this.collectionName + '_Hawalas')
+                             .orderBy('regDate', 'desc').limit(100).get();
+            hawalaSnapshot.forEach(doc => {
+                data.hawalas.push(doc.data());
+            });
+
+            console.log("System Loaded Successfully (Smart Mode).");
+            return data;
+        } catch (error) {
+            console.error("Firebase Load Error:", error);
+            return {};
+        }
     }
-    async saveAll(dbObj) {
-        // در اینجا هم اضافه شدند تا موقع ذخیره نادیده گرفته نشوند
-        const stores = Object.keys(dbObj).filter(k => ['users', 'customers', 'cashBox', 'currencies', 'hawalas', 'accounts', 'journal', 'cities', 'initialCapital', 'cityHawalaCounters', 'fxProfit', 'settings', 'employees', 'employeeLedger'].includes(k));
-        const tx = this.db.transaction(stores, 'readwrite');
-        stores.forEach(s => tx.objectStore(s).put(dbObj[s], 'root'));
-        return new Promise((res, rej) => { tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); });
+
+    // --- تابع جدید: دریافت حساب یک مشتری خاص ---
+    async loadSingleAccount(customerName) {
+        try {
+            const doc = await this.db.collection(this.collectionName + '_Accounts').doc(customerName).get();
+            if (doc.exists) {
+                return doc.data().list || [];
+            }
+            return []; // اگر حساب خالی بود
+        } catch (e) {
+            console.error("Error loading account:", e);
+            return [];
+        }
+    }
+
+    // ذخیره تنظیمات عمومی
+    async saveGeneral(dbObj) {
+        const { hawalas, accounts, journal, ...generalData } = dbObj;
+        try {
+            await this.db.collection(this.collectionName).doc('General_Data').set(generalData, { merge: true });
+        } catch (e) { console.error("General Save Error:", e); }
+    }
+
+    // ذخیره حساب یک مشتری خاص
+    async saveCustomerAccount(customerName, txList) {
+        try {
+            await this.db.collection(this.collectionName + '_Accounts').doc(customerName).set({
+                list: txList,
+                lastUpdate: Date.now()
+            });
+        } catch (e) { console.error("Account Save Error:", e); }
+    }
+
+    // ذخیره یک لاگ جدید
+    async saveLogEntry(logItem) {
+        try {
+            await this.db.collection(this.collectionName + '_Journal').doc(String(logItem.time)).set(logItem);
+        } catch (e) { console.error("Log Save Error:", e); }
+    }
+    
+    // حذف لاگ
+    async deleteLogEntry(timeId) {
+        try {
+            await this.db.collection(this.collectionName + '_Journal').doc(String(timeId)).delete();
+        } catch (e) { console.error("Log Delete Error:", e); }
+    }
+
+    // حواله‌ها
+    async saveSingleHawala(h) {
+        try { await this.db.collection(this.collectionName + '_Hawalas').doc(h.id).set(h); } 
+        catch (e) { console.error("Hawala Save Error:", e); }
+    }
+    async deleteSingleHawala(hId) {
+        try { await this.db.collection(this.collectionName + '_Hawalas').doc(hId).delete(); } 
+        catch (e) { console.error("Hawala Delete Error:", e); }
+    }
+    
+    // ذخیره همه (برای حالت آپلود اولیه)
+    async saveAll(fullDb) {
+         await this.saveGeneral(fullDb);
     }
 }
-// توجه: عدد آخر به 4 تغییر کرد تا تغییرات دیتابیس اعمال شود
-const dbAdapter = new DBAdapter('heratiha_secure_db_v3', 4);
-
+// ایجاد نمونه جدید از آداپتور فایربیس
+const dbAdapter = new DBAdapter();
+// --- پایان کد جدید فایربیس ---
 function generateSalt() { return CryptoJS.lib.WordArray.random(128/8).toString(); }
 function hashPassword(pwd, salt) { return CryptoJS.PBKDF2(pwd, salt, { keySize: 256/32, iterations: 1000 }).toString(); }
 function escapeHtml(text) { if (!text) return ''; return text.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
@@ -2399,47 +2638,111 @@ function getPrintHeaderHTML() {
             </div>`;
 }
 
+// --- تنظیمات دیتابیس آفلاین نامحدود ---
+localforage.config({
+    name: 'HeratihaExchangeDB',
+    storeName: 'main_store',
+    description: 'ذخیره سازی نامحدود برای صرافی'
+});
+
 async function loadDB() {
+    const loadingMsg = document.getElementById('loadingMsg');
+    if(loadingMsg) loadingMsg.style.display = 'block';
+
     try {
-        await dbAdapter.init();
-        const savedData = await dbAdapter.loadAll();
-        if (savedData.users && savedData.users.length > 0) { 
-            db = Object.assign(db, savedData); 
-        } else { 
-            const s = generateSalt(); 
-            db.users = [{ 
-                u: 'admin', 
-                salt: s, 
-                hash: hashPassword('123456', s), 
-                perms: { hawala: true, exchange: true, accounts: true, tt: true, admin: true, access_group_b: true } 
-            }]; 
+        console.log("Loading Data...");
+
+        // 1. خواندن از حافظه نامحدود مرورگر (IndexedDB)
+        const localData = await localforage.getItem('HeratExchange_FullDB');
+        
+        if (localData) {
+            db = localData;
+            console.log("✅ دیتای آفلاین با موفقیت لود شد.");
         }
 
-        if (!db.employeeLedger) db.employeeLedger = {};
+        // 2. تلاش برای دریافت دیتای اینترنت (فایربیس)
+        // اگر اینترنت نباشد، این بخش ارور میدهد و به catch میرود (که مشکلی نیست)
+        await dbAdapter.init();
+        const cloudData = await dbAdapter.loadAll();
 
-        fxProfit = db.fxProfit || {};
+        if (cloudData && Object.keys(cloudData).length > 0) {
+            // مقایسه هوشمند: اگر دیتای ابری جدیدتر بود، جایگزین کن
+            // اما اگر ما آفلاین کار کرده بودیم، دیتای خودمان را نگه دار
+            const localLastUpdate = db.lastUpdate || 0;
+            const cloudLastUpdate = cloudData.settings ? (cloudData.settings.lastUpdate || 0) : 0;
+
+            if (cloudLastUpdate > localLastUpdate) {
+                console.log("⬇️ دیتای اینترنت جدیدتر است. بروزرسانی...");
+                db = Object.assign(db, cloudData);
+                // ذخیره نسخه جدید اینترنت روی کامپیوتر
+                await localforage.setItem('HeratExchange_FullDB', db);
+            } else if (localLastUpdate > cloudLastUpdate) {
+                console.log("⬆️ دیتای کامپیوتر جدیدتر است (کار آفلاین). ارسال به اینترنت...");
+                await saveDB(); // ارسال کارهای آفلاین به سرور
+            }
+        } else {
+            // اگر فایربیس خالی بود و لوکال دیتا داشتیم، آپلود کن
+            if (localData) {
+                console.log("فایربیس خالی بود. آپلود دیتای لوکال...");
+                await dbAdapter.saveAll(db);
+            } else {
+                // بار اول استفاده (دیتابیس خالی)
+                const s = generateSalt();
+                db.users = [{
+                    u: 'admin',
+                    salt: s,
+                    hash: hashPassword('123456', s),
+                    perms: { hawala: true, exchange: true, accounts: true, tt: true, admin: true, access_group_b: true }
+                }];
+                db.lastUpdate = Date.now();
+            }
+        }
+
+        // اطمینان از ساختار دیتا (جلوگیری از باگ)
         if (!db.settings) db.settings = { printHeader: false };
-        if (!db.avgRates) db.avgRates = {};
+        if (!db.employeeLedger) db.employeeLedger = {};
+        if (!db.fxProfit) db.fxProfit = {};
+        if (!db.cityHawalaCounters) db.cityHawalaCounters = {};
         
         db.currencies.forEach(c => { 
             if (db.cashBox[c] === undefined) db.cashBox[c] = 0; 
             if (db.initialCapital[c] === undefined) db.initialCapital[c] = 0; 
         });
-        
-        db.cityHawalaCounters = db.cityHawalaCounters || {};
-        db.cities.forEach(city => { 
-            if (!db.cityHawalaCounters[city.code]) { db.cityHawalaCounters[city.code] = { Outgoing: 1001, Incoming: 1001 }; } 
-        });
 
-        await dbAdapter.saveAll(db);
-        
-        // *** آن بخش اتوماتیک که اینجا بود کامل حذف شد ***
-
-    } catch (e) { console.error("DB Load Error", e); alert("خطا در بارگذاری پایگاه داده"); }
+    } catch (e) {
+        console.log("⚠️ حالت آفلاین: دسترسی به اینترنت نیست. کار با دیتای داخلی ادامه می‌یابد.");
+        // ارور را نشان نده تا کاربر نگران نشود، چون دیتای لوکال لود شده است.
+    } finally {
+        if(loadingMsg) loadingMsg.style.display = 'none';
+        updateUI();
+    }
 }
 
-async function saveDB() { db.fxProfit = fxProfit; try { await dbAdapter.saveAll(db); updateUI(); } catch (err) { console.error("Save Failed", err); alert("خطا در ذخیره اطلاعات!"); } }
+async function saveDB() {
+    db.lastUpdate = Date.now();
+    if(!db.settings) db.settings = {};
+    db.settings.lastUpdate = db.lastUpdate;
+    db.fxProfit = fxProfit;
 
+    // ذخیره لوکال (آفلاین) - همه چیز را نگه می‌دارد
+    try {
+        await localforage.setItem('HeratExchange_FullDB', db);
+    } catch (localErr) { console.error("Local Save Error:", localErr); }
+
+    // ذخیره ابری (فایربیس) - فقط تنظیمات عمومی را می‌فرستد
+    // نکته: حساب‌ها و ژورنال‌ها جداگانه ذخیره می‌شوند
+    try {
+        await dbAdapter.saveGeneral(db);
+        
+        // نمایش تیک سبز
+        const header = document.querySelector('.header-bar h2');
+        if(header) {
+            const originalColor = header.style.color;
+            header.style.color = '#00e676';
+            setTimeout(() => header.style.color = originalColor, 1000);
+        }
+    } catch (err) { console.log("Cloud save skipped (offline)"); }
+}
 function go(pageId) {
     // چک کردن دسترسی‌ها قبل از تغییر صفحه
     if (pageId === 'dashboard' && !currentUser.perms.admin) {
@@ -2490,9 +2793,24 @@ function go(pageId) {
 
 function openModal(id) { const modal = document.getElementById(id); modal.style.display = 'flex'; setTimeout(() => { const firstInput = modal.querySelector('input:not([type="hidden"]), select'); if(firstInput) firstInput.focus(); }, 100); }
 function closeModal(id) { const modal = document.getElementById(id); modal.style.display = 'none'; modal.querySelectorAll('input').forEach(inp => inp.value = ''); modal.querySelectorAll('select').forEach(sel => sel.selectedIndex = 0); }
-
-function logTx(section, desc, amt, type = null, data = null) { db.journal.push({ id: Date.now() + Math.random(), time: new Date().getTime(), section: section, desc: desc, amt: amt, user: currentUser.u, type: type, data: data }); }
-
+function logTx(section, desc, amt, type = null, data = null) { 
+    const logItem = { 
+        id: Date.now() + Math.random(), 
+        time: new Date().getTime(), 
+        section: section, 
+        desc: desc, 
+        amt: amt, 
+        user: currentUser.u, 
+        type: type, 
+        data: data 
+    };
+    
+    // اضافه کردن به رم (برای نمایش لحظه‌ای)
+    db.journal.push(logItem);
+    
+    // ارسال مستقیم فقط همین یک لاگ به فایربیس
+    dbAdapter.saveLogEntry(logItem);
+}
 async function init() {
     setLanguage(currentLang);
     const loadingMsg = document.getElementById('loadingMsg'); loadingMsg.style.display = 'block';
@@ -2567,10 +2885,22 @@ function handleF10() {
 function auth() {
     const u = document.getElementById('loginUser').value.trim().toLowerCase();
     const p = document.getElementById('loginPass').value;
+    
+    // جستجو در لیست کاربران
     const user = db.users.find(x => x.u === u);
     document.getElementById('loginErr').style.display = 'none';
     
-    if (user && hashPassword(p, user.salt) === user.hash) {
+    if (!user) {
+        // کاربر پیدا نشد
+        document.getElementById('loginErr').style.display = 'block';
+        return;
+    }
+
+    // بررسی رمز عبور (هش شده)
+    const calculatedHash = hashPassword(p, user.salt);
+    
+    if (calculatedHash === user.hash) {
+        // ورود موفق
         currentUser = user; 
         document.getElementById('loginPage').style.display = 'none'; 
         document.getElementById('mainApp').style.display = 'flex';
@@ -2579,25 +2909,32 @@ function auth() {
         applyPermissions(); 
         applyTranslations();
 
-        if (user.perms.admin) {
-            go('dashboard'); 
-        } else if (user.perms.hawala) {
-            go('hawala'); 
-        } else if (user.perms.exchange) {
-            go('exchange'); 
-        } else if (user.perms.accounts) {
-            go('accounts'); 
-        } else if (user.perms.tt) {
-            go('ttPage');
-        } else {
-            alert("شما دسترسی به هیچ بخشی ندارید!");
-        }
-        return;
-    } 
-    document.getElementById('loginErr').style.display = 'block';
+        // هدایت بر اساس سطح دسترسی
+        if (user.perms.admin) go('dashboard'); 
+        else if (user.perms.hawala) go('hawala'); 
+        else if (user.perms.exchange) go('exchange'); 
+        else if (user.perms.accounts) go('accounts'); 
+        else if (user.perms.tt) go('ttPage');
+        else alert("شما دسترسی به هیچ بخشی ندارید!");
+    } else {
+        // رمز اشتباه است
+        document.getElementById('loginErr').style.display = 'block';
+    }
 }
+function logout() {
+    // 1. نمایش پیام به کاربر (اختیاری)
+    // alert("در حال گرفتن نسخه پشتیبان و خروج...");
 
-function logout() { location.reload(); }
+    // 2. دستور دانلود فایل بک‌آپ
+    if (typeof exportDB === 'function') {
+        exportDB();
+    }
+
+    // 3. مکث ۲ ثانیه‌ای برای اینکه دانلود شروع شود، سپس خروج (ریلود)
+    setTimeout(() => {
+        location.reload();
+    }, 2000);
+}
 function applyPermissions() {
     const isFullAdmin = currentUser?.perms.admin; 
     
@@ -2932,8 +3269,10 @@ function renderJournal() {
 }
 
 async function deleteLog(time, logId) {
+    // پیدا کردن لاگ در حافظه
     const logIndex = db.journal.findIndex(j => (j.id && j.id === logId) || j.time === time);
     if (logIndex === -1) return;
+    
     const logEntry = db.journal[logIndex];
 
     const msg = currentLang === 'fa' ? 
@@ -2942,6 +3281,7 @@ async function deleteLog(time, logId) {
     
     if (!confirm(msg)) return;
 
+    // --- شروع عملیات بازگشت تراکنش (Reverse Logic) ---
     if (logEntry.type && logEntry.data) {
         const d = logEntry.data;
         try {
@@ -2951,11 +3291,9 @@ async function deleteLog(time, logId) {
                 if (hIndex > -1) {
                     const h = db.hawalas[hIndex];
                     
-
                     if (h.type === 'Outgoing' && !h.isInternal) { 
                         db.cashBox[h.curr] = (db.cashBox[h.curr] || 0) - h.amt; 
                         
-
                         if(h.comm) {
                             const cCurr = h.commCurr || h.curr;
                             db.cashBox[cCurr] = (db.cashBox[cCurr] || 0) - h.comm; 
@@ -2965,13 +3303,16 @@ async function deleteLog(time, logId) {
                     if (h.isInternal && h.internalCust && db.accounts[h.internalCust]) {
                         if(d.accId) {
                              db.accounts[h.internalCust] = db.accounts[h.internalCust].filter(acc => acc.id !== d.accId);
+                             // آپدیت حساب مشتری در فایربیس
+                             await dbAdapter.saveCustomerAccount(h.internalCust, db.accounts[h.internalCust]); // <--- خط جدید
                         }
                     }
 
                     db.hawalas.splice(hIndex, 1);
+                    // حذف حواله از فایربیس
+                    await dbAdapter.deleteSingleHawala(d.hawalaId); // <--- خط جدید
                 }
 
-                // ث) بازگشت شماره انداز (Counter)
                 if (d.hawalaId) {
                     const parts = d.hawalaId.split('-');
                     if(parts.length >= 3) {
@@ -2991,14 +3332,14 @@ async function deleteLog(time, logId) {
                 if (d.isInternal) {
                     if (d.cust && db.accounts[d.cust]) {
                         db.accounts[d.cust] = db.accounts[d.cust].filter(acc => acc.id !== d.accId1 && acc.id !== d.accId2);
+                        // آپدیت حساب مشتری در فایربیس
+                        await dbAdapter.saveCustomerAccount(d.cust, db.accounts[d.cust]); // <--- خط جدید
                     }
                 } else {
                     if (d.direction === 'Buy') { 
-
                         db.cashBox[d.baseCurr] -= d.baseAmt; 
                         db.cashBox[d.quoteCurr] += d.quoteAmt; 
                     } else { 
-
                         db.cashBox[d.baseCurr] += d.baseAmt; 
                         db.cashBox[d.quoteCurr] -= d.quoteAmt; 
                     }
@@ -3010,14 +3351,14 @@ async function deleteLog(time, logId) {
 
             else if (logEntry.type === 'TX') {
                 if (d.type === 'debit') {
-
                     db.cashBox[d.curr] += d.amt; 
                 } else {
-
                     db.cashBox[d.curr] -= d.amt; 
                 }
                 if (db.accounts[d.cust]) {
                     db.accounts[d.cust] = db.accounts[d.cust].filter(acc => acc.id !== d.accId);
+                    // آپدیت حساب مشتری در فایربیس
+                    await dbAdapter.saveCustomerAccount(d.cust, db.accounts[d.cust]); // <--- خط جدید
                 }
             }
 
@@ -3026,36 +3367,47 @@ async function deleteLog(time, logId) {
                 if(h) {
                     h.status = 'Pending'; 
                     h.execDate = 0;
+                    // ذخیره تغییر وضعیت حواله در فایربیس
+                    await dbAdapter.saveSingleHawala(h); // <--- خط جدید
                     
                     if (d.isInternal && d.cust) {
                         if(db.accounts[d.cust] && d.accId) {
                             db.accounts[d.cust] = db.accounts[d.cust].filter(acc => acc.id !== d.accId);
+                            // آپدیت حساب مشتری در فایربیس
+                            await dbAdapter.saveCustomerAccount(d.cust, db.accounts[d.cust]); // <--- خط جدید
                         }
                     } else {
-
                         db.cashBox[d.curr] += d.amt;
                     }
                 }
             }
 
             else if (logEntry.type === 'TT_EXTERNAL') {
-
                 db.cashBox[d.curr] -= d.amt;
             }
             else if (logEntry.type === 'TT_INTERNAL') {
-                if(db.accounts[d.cust]) db.accounts[d.cust] = db.accounts[d.cust].filter(acc => acc.id !== d.accId);
+                if(db.accounts[d.cust]) {
+                    db.accounts[d.cust] = db.accounts[d.cust].filter(acc => acc.id !== d.accId);
+                    await dbAdapter.saveCustomerAccount(d.cust, db.accounts[d.cust]); // <--- خط جدید
+                }
             }
 
-            // --- 6. سایر موارد ---
             else if (logEntry.type === 'ACC_TRANSFER') {
-                if(db.accounts[d.s]) db.accounts[d.s] = db.accounts[d.s].filter(a => a.id !== d.id1);
-                if(db.accounts[d.r]) db.accounts[d.r] = db.accounts[d.r].filter(a => a.id !== d.id2);
+                if(db.accounts[d.s]) {
+                    db.accounts[d.s] = db.accounts[d.s].filter(a => a.id !== d.id1);
+                    await dbAdapter.saveCustomerAccount(d.s, db.accounts[d.s]); // <--- خط جدید
+                }
+                if(db.accounts[d.r]) {
+                    db.accounts[d.r] = db.accounts[d.r].filter(a => a.id !== d.id2);
+                    await dbAdapter.saveCustomerAccount(d.r, db.accounts[d.r]); // <--- خط جدید
+                }
             }
             else if (logEntry.type === 'CRYPTO') {
                 if (d.type === 'Buy') {
                     db.cashBox[d.cName] -= d.vol;
                     if(d.isInternal && d.cust) {
                          db.accounts[d.cust] = db.accounts[d.cust].filter(a => a.id !== d.accId);
+                         await dbAdapter.saveCustomerAccount(d.cust, db.accounts[d.cust]); // <--- خط جدید
                     } else {
                         db.cashBox[d.curr] += d.fiatAmt;
                     }
@@ -3063,6 +3415,7 @@ async function deleteLog(time, logId) {
                     db.cashBox[d.cName] += d.vol;
                     if(d.isInternal && d.cust) {
                          db.accounts[d.cust] = db.accounts[d.cust].filter(a => a.id !== d.accId);
+                         await dbAdapter.saveCustomerAccount(d.cust, db.accounts[d.cust]); // <--- خط جدید
                     } else {
                         db.cashBox[d.curr] -= d.fiatAmt;
                     }
@@ -3070,12 +3423,8 @@ async function deleteLog(time, logId) {
                 }
             }
             
-            // --- بخش جدید برای بازگشت حقوق ---
             else if (logEntry.type === 'EMP_PAYMENT') {
-                // 1. بازگشت پول به صندوق
                 db.cashBox[d.curr] = (db.cashBox[d.curr] || 0) + d.amount;
-
-                // 2. حذف تراکنش از دفتر حساب کارمند
                 if(db.employeeLedger && db.employeeLedger[d.empId]) {
                     db.employeeLedger[d.empId] = db.employeeLedger[d.empId].filter(x => x.id !== d.txId);
                 }
@@ -3087,15 +3436,30 @@ async function deleteLog(time, logId) {
             return; 
         }
     }
+    // --- پایان عملیات بازگشت ---
 
+    // ==========================================
+    // بخش اصلی که پرسیدید (حذف نهایی لاگ)
+    // ==========================================
+    
+    // 1. آیتم را قبل از حذف نگه می‌داریم
+    const deletedItem = db.journal[logIndex];
+    
+    // 2. از حافظه مرورگر پاک می‌کنیم
     db.journal.splice(logIndex, 1);
     
+    // 3. از فایربیس هم پاک می‌کنیم (بسیار مهم)
+    await dbAdapter.deleteLogEntry(deletedItem.time); // <--- خط جدید و حیاتی
+
+    // ==========================================
+
     await saveDB(); 
     renderJournal(); 
     renderDashboard(); 
+    
     if(document.getElementById('hawala').classList.contains('active')) filterHawala();
     if(document.getElementById('accounts').classList.contains('active')) loadCustomerLedger();
-    if(document.getElementById('employees').classList.contains('active')) renderEmployees(); // رفرش لیست کارمندان
+    if(document.getElementById('employees').classList.contains('active')) renderEmployees();
 
     alert(currentLang === 'fa' ? "عملیات بازگردانی شد و موجودی‌ها اصلاح گردید." : "Reversed successfully.");
 }
@@ -3150,17 +3514,29 @@ async function submitHawala() {
     const hAmt = parseFloat(document.getElementById('hAmt').value); 
     const hCurr = document.getElementById('hCurr').value; 
     
+    // دریافت اطلاعات با بررسی دقیق (اگر خالی بود null ذخیره شود)
+    const getVal = (id) => { const v = document.getElementById(id).value.trim(); return v === '' ? null : v; };
 
-    const hSender = document.getElementById('hSender').value.trim(); 
-    const hReceiver = document.getElementById('hReceiver').value.trim();
+    const hSender = getVal('hSender');
+    const hSenderLast = getVal('hSenderLast'); 
+    const hSenderFather = getVal('hSenderFather'); 
+    const hSenderPhone = getVal('hPhone'); 
+    const hSenderID = getVal('hSenderID'); 
+    const hSenderPurpose = getVal('hSenderPurpose');
 
-    
+    const hReceiver = getVal('hReceiver');
+    const hReceiverLast = getVal('hReceiverLast');
+    const hReceiverFather = getVal('hReceiverFather');
+    const hReceiverPhone = getVal('hReceiverPhone');
+    const hReceiverID = getVal('hReceiverID');
+    const hReceiverPurpose = getVal('hReceiverPurpose');
+
     let rawComm = parseFloat(document.getElementById('hComm').value) || 0; 
     const commType = document.getElementById('hCommType').value;
     const commCurr = document.getElementById('hCommCurr').value; 
     const hComm = (commType === 'out') ? -rawComm : rawComm; 
 
-    if (!hCityBook || hAmt <= 0 || !hSender || !hReceiver) { alert("اطلاعات ناقص است"); return; }
+    if (!hCityBook || hAmt <= 0 || !hSender || !hReceiver) { alert("اطلاعات ناقص است (نام فرستنده، گیرنده، مبلغ و شهر الزامی است)"); return; }
     
     let dataGroup = 'A'; 
     if (currentUser.perms.access_group_b || currentUser.perms.admin) dataGroup = document.getElementById('hGroup').value;
@@ -3174,21 +3550,20 @@ async function submitHawala() {
         id: uniqueId, displayId: displayNum, bookNum: bookNum, type: hType, 
         cityBook: hCityBook, amt: hAmt, curr: hCurr, 
         comm: hComm, commCurr: commCurr,
-        sender: hSender, receiver: hReceiver, // و بقیه فیلدها...
+        // ذخیره تمام فیلدها
+        sender: hSender, senderLast: hSenderLast, senderFather: hSenderFather, senderPhone: hSenderPhone, senderID: hSenderID, senderPurpose: hSenderPurpose,
+        receiver: hReceiver, receiverLast: hReceiverLast, receiverFather: hReceiverFather, receiverPhone: hReceiverPhone, receiverID: hReceiverID, receiverPurpose: hReceiverPurpose,
+        
         regDate: Date.now(), 
         execDate: hType === 'Outgoing' ? Date.now() : 0, 
         status: hType === 'Outgoing' ? 'Done' : 'Pending',
         isInternal: isInternal, internalCust: isInternal ? custName : null, dataGroup: dataGroup 
     };
 
-
     let logData = { hawalaId: uniqueId, isInternal: isInternal };
 
-
     if (hType === 'Outgoing') { 
-
-        let logText = `ارسال حواله (${displayNum}) به ${hCityBook} | فرستنده: ${hSender} | گیرنده: ${hReceiver} | کمیشن: ${hComm} ${commCurr}`;
-        
+        let logText = `ارسال حواله (${displayNum}) به ${hCityBook} | فرستنده: ${hSender} | گیرنده: ${hReceiver}`;
         if (isInternal) {
             const accId = Date.now();
             db.accounts[custName].push({ id: accId, date: Date.now(), desc: `Hawala Out ${displayNum} (Comm: ${hComm} ${commCurr})`, curr: hCurr, debit: hAmt, credit: 0, type: 'debit' });
@@ -3204,10 +3579,13 @@ async function submitHawala() {
     }
 
     db.hawalas.push(newHawala); 
+// این خط را اضافه کن تا حواله همان لحظه در اینترنت هم ذخیره شود
+    dbAdapter.saveSingleHawala(newHawala);
     await saveDB(); 
     closeModal('modalNewHawala'); filterHawala(); renderDashboard(); 
-    alert(`حواله ${displayNum} ثبت شد.`);
+    alert(`حواله ${displayNum} ثبت شد.\nحالا می‌توانید در بخش چاپ، جزئیات کامل آن را ببینید.`);
 }
+
 async function execHawala(id) {
     if (!currentUser.perms.admin && !currentUser.perms.hawala) return;
     const h = db.hawalas.find(x => x.id === id); if (!h || h.status !== 'Pending') return;
@@ -3229,7 +3607,7 @@ async function execHawala(id) {
 function openEditHawalaModal(id) {
     // 1. بررسی دسترسی مدیر
     if (!currentUser || !currentUser.perms.admin) {
-        alert("⛔ دسترسی غیرمجاز!\nویرایش مبالغ حواله و اصلاح صندوق فقط برای مدیریت (Admin) امکان‌پذیر است.");
+        alert("⛔ دسترسی غیرمجاز!\nویرایش فقط برای مدیریت (Admin) امکان‌پذیر است.");
         return;
     }
 
@@ -3247,14 +3625,21 @@ function openEditHawalaModal(id) {
     document.getElementById('editHCurr').value = h.curr;
     document.getElementById('editHComm').value = h.comm || 0;
     
-    // پر کردن لیست ارز برای کمیشن و انتخاب ارز فعلی
+    // لیست ارز برای کمیشن
     const commCurrSelect = document.getElementById('editHCommCurr');
     commCurrSelect.innerHTML = db.currencies.map(c => `<option value="${c}">${c}</option>`).join('');
     commCurrSelect.value = h.commCurr || h.curr;
 
-    // سایر مشخصات
+    // --- مشخصات جدید (نام، تخلص، پدر) ---
     document.getElementById('editHSender').value = h.sender; 
+    document.getElementById('editHSenderLast').value = h.senderLast || ''; 
+    document.getElementById('editHSenderFather').value = h.senderFather || ''; 
+
     document.getElementById('editHReceiver').value = h.receiver; 
+    document.getElementById('editHReceiverLast').value = h.receiverLast || ''; 
+    document.getElementById('editHReceiverFather').value = h.receiverFather || ''; 
+    // ------------------------------------
+
     document.getElementById('editHPhone').value = h.phone; 
     document.getElementById('editHIDCard').value = h.idCard; 
     
@@ -3262,7 +3647,6 @@ function openEditHawalaModal(id) {
 }
 
 async function submitEditHawala() {
-    // 1. بررسی دسترسی مدیر (لایه دوم امنیت)
     if (!currentUser || !currentUser.perms.admin) {
         alert("⛔ شما مجوز ذخیره این تغییرات را ندارید.");
         return;
@@ -3279,26 +3663,22 @@ async function submitEditHawala() {
     const newCommCurr = document.getElementById('editHCommCurr').value;
     const newType = document.getElementById('editHType').value;
     
-    // ==========================================================
-    // مرحله 1: خنثی‌سازی (Revert) تاثیر حواله قدیمی از صندوق
-    // ==========================================================
-    // فقط اگر حواله داخلی (حساب مشتری) نباشد، روی صندوق تاثیر دارد
+    // === مرحله 1: برگرداندن تاثیر حواله قدیمی از صندوق (Revert) ===
     if (!h.isInternal) {
         if (h.type === 'Outgoing') {
-            // قبلاً پول گرفته بودیم (مثبت بوده)، حالا باید کم کنیم تا اثرش پاک شود
+            // قبلاً پول گرفته بودیم، حالا باید کم کنیم
             db.cashBox[h.curr] = (db.cashBox[h.curr] || 0) - h.amt;
+            // اصلاح باگ کمیشن: کسر از ارز مخصوص کمیشن
             const oldCommCurr = h.commCurr || h.curr;
             if(h.comm) db.cashBox[oldCommCurr] = (db.cashBox[oldCommCurr] || 0) - h.comm;
             
         } else if (h.type === 'Incoming' && h.status === 'Done') {
-            // قبلاً پول داده بودیم (منفی بوده)، حالا باید برگردانیم به صندوق
+            // قبلاً پول داده بودیم، حالا برمی‌گردانیم
             db.cashBox[h.curr] = (db.cashBox[h.curr] || 0) + h.amt;
         }
     }
 
-    // ==========================================================
-    // مرحله 2: بروزرسانی اطلاعات آبجکت حواله با مقادیر جدید
-    // ==========================================================
+    // === مرحله 2: ذخیره اطلاعات جدید (شامل نام پدر و تخلص) ===
     h.cityBook = document.getElementById('editHCityBook').value; 
     h.type = newType;
     h.amt = newAmt;
@@ -3307,49 +3687,75 @@ async function submitEditHawala() {
     h.commCurr = newCommCurr;
     
     h.sender = document.getElementById('editHSender').value; 
+    h.senderLast = document.getElementById('editHSenderLast').value; // تخلص
+    h.senderFather = document.getElementById('editHSenderFather').value; // پدر
+
     h.receiver = document.getElementById('editHReceiver').value; 
+    h.receiverLast = document.getElementById('editHReceiverLast').value; // تخلص
+    h.receiverFather = document.getElementById('editHReceiverFather').value; // پدر
+
     h.phone = document.getElementById('editHPhone').value; 
     h.idCard = document.getElementById('editHIDCard').value;
 
-    // ==========================================================
-    // مرحله 3: اعمال (Apply) تاثیر مقادیر جدید روی صندوق
-    // ==========================================================
+    // === مرحله 3: اعمال مقادیر جدید روی صندوق ===
     if (!h.isInternal) {
         if (h.type === 'Outgoing') {
-            // حواله ارسالی جدید: دریافت پول از مشتری (اضافه به صندوق)
             db.cashBox[newCurr] = (db.cashBox[newCurr] || 0) + newAmt;
             db.cashBox[newCommCurr] = (db.cashBox[newCommCurr] || 0) + newComm;
             
         } else if (h.type === 'Incoming' && h.status === 'Done') {
-            // حواله دریافتی (اگر تسویه شده باشد): پرداخت پول به مشتری (کسر از صندوق)
             db.cashBox[newCurr] = (db.cashBox[newCurr] || 0) - newAmt;
         }
     }
 
-    // ثبت لاگ
-    logTx('ویرایش حواله', `اصلاح حواله ${h.displayId || id} توسط مدیر`, `مبلغ جدید: ${newAmt} ${newCurr} | کمیشن: ${newComm}`);
-    
+    logTx('ویرایش حواله', `اصلاح حواله ${h.displayId || id}`, `مبلغ جدید: ${newAmt} ${newCurr}`);
+   // این خط را اضافه کن تا ویرایش در اینترنت هم اعمال شود
+    dbAdapter.saveSingleHawala(h); 
     await saveDB(); 
     closeModal('modalEditHawala'); 
     filterHawala(); 
     renderDashboard(); 
-    alert(`تغییرات با موفقیت ثبت شد و موجودی صندوق ${newCurr} اصلاح گردید.`);
+    alert(`تغییرات ثبت شد.`);
 }
 async function deleteHawala(id) {
-    if (!currentUser.perms.admin) return;
-    const hIndex = db.hawalas.findIndex(x => x.id === id); if (hIndex === -1) return; const h = db.hawalas[hIndex];
-    if (!confirm(`Delete ${h.displayId || id}?`)) return;
+    if (!currentUser.perms.admin) return; // چک کردن دسترسی ادمین
+    const hIndex = db.hawalas.findIndex(x => x.id === id); 
+    if (hIndex === -1) return; 
+    const h = db.hawalas[hIndex];
     
+    if (!confirm(`آیا از حذف حواله ${h.displayId || h.id} اطمینان دارید؟\nمبالغ از صندوق کسر خواهند شد.`)) return;
+    
+    // --- شروع اصلاحیه باگ ---
     if (h.type === 'Outgoing' && h.status === 'Done' && !h.isInternal) {
-        db.cashBox[h.curr] -= (h.amt + (h.comm || 0)); 
-    } else if (h.type === 'Incoming' && h.status === 'Done' && !h.isInternal) {
-        db.cashBox[h.curr] += h.amt;
-    }
-    db.hawalas.splice(hIndex, 1); logTx('حواله', `Deleted Hawala ${h.displayId || id}`, `Reversed: ${h.amt} ${h.curr}`);
-    await saveDB(); filterHawala(); renderDashboard();
-}
+        // 1. کسر اصل مبلغ از ارز اصلی (مثلاً دلار)
+        db.cashBox[h.curr] = (db.cashBox[h.curr] || 0) - h.amt;
+        
+        // 2. کسر کمیشن از ارز کمیشن (اگر وجود دارد)
+        if (h.comm && h.comm !== 0) {
+            const cCurr = h.commCurr || h.curr; // تشخیص ارز کمیشن
+            db.cashBox[cCurr] = (db.cashBox[cCurr] || 0) - h.comm;
+        }
 
-/* این تابع را کامل پاک کنید */
+    } else if (h.type === 'Incoming' && h.status === 'Done' && !h.isInternal) {
+        // برای حواله دریافتی تسویه شده، پول به صندوق برمی‌گردد
+        db.cashBox[h.curr] = (db.cashBox[h.curr] || 0) + h.amt;
+    }
+    // --- پایان اصلاحیه ---
+
+    db.hawalas.splice(hIndex, 1); 
+// این خط را اضافه کن تا حواله از اینترنت هم پاک شود
+    dbAdapter.deleteSingleHawala(h.id);
+    
+    // ثبت لاگ برای ردگیری
+    logTx('حذف حواله', `Deleted Hawala ${h.displayId || id}`, `Reversed: ${h.amt} ${h.curr}`);
+    
+    await saveDB(); 
+    filterHawala(); 
+    renderDashboard();
+    
+    // نمایش پیام موفقیت
+    alert("حواله حذف شد و موجودی صندوق‌ها به تفکیک ارز اصلاح گردید.");
+}
 function filterHawala() {
     const hasAccess = currentUser.perms.access_group_b || currentUser.perms.admin;
     const filterCity = document.getElementById('filterHCity').value;
@@ -3504,11 +3910,38 @@ function printCryptoFx() {
     win.document.write(`<html><head><title>Crypto</title><style>body{font-family:'Vazirmatn';direction:${TRANSLATIONS[currentLang].dir}}</style></head><body>${getPrintHeaderHTML()}<h3>Crypto Receipt</h3></body></html>`); 
     win.document.close(); win.print(); 
 }
-async function addCustomer() { const n = document.getElementById('newCustName').value.trim(); if (!n || db.customers.some(c => c.name === n)) { alert("Invalid Name"); return; } db.customers.push({ name: n, phone: document.getElementById('newCustPhone').value }); db.accounts[n] = []; await saveDB(); closeModal('modalNewCust'); updateUI(); alert("Added."); }
-function openEditCustomerModal() { const custName = document.getElementById('selCustomer').value; if (!custName) return; const custObj = db.customers.find(c => c.name === custName); document.getElementById('editCustName').value = custObj.name; document.getElementById('editCustPhone').value = custObj.phone || ''; openModal('modalEditCust'); }
+
+async function addCustomer() { 
+    // ... (کدهای قبلی)
+    db.customers.push({ name: n, phone: document.getElementById('newCustPhone').value }); 
+    db.accounts[n] = []; 
+    
+    // ذخیره لیست مشتریان در General
+    await saveDB(); 
+    // ایجاد سند خالی برای مشتری در کالکشن جدید
+    await dbAdapter.saveCustomerAccount(n, []);
+    
+    closeModal('modalNewCust'); updateUI(); alert("Added."); 
+}
+
+async function openEditCustomerModal() { 
+    const custName = document.getElementById('selCustomer').value; 
+    if (!custName) return; 
+    
+    // اطمینان از اینکه اطلاعات مشتری لود شده (برای مواقعی که لیست تراکنش‌ها لازم است)
+    if (!db.accounts[custName]) {
+         db.accounts[custName] = await dbAdapter.loadSingleAccount(custName);
+    }
+
+    const custObj = db.customers.find(c => c.name === custName); 
+    document.getElementById('editCustName').value = custObj.name; 
+    document.getElementById('editCustPhone').value = custObj.phone || ''; 
+    openModal('modalEditCust'); 
+}
 async function submitEditCustomer() { const oldName = document.getElementById('selCustomer').value; const newName = document.getElementById('editCustName').value.trim(); if (!newName) return; const custIndex = db.customers.findIndex(c => c.name === oldName); if (custIndex !== -1) { db.customers[custIndex].name = newName; db.customers[custIndex].phone = document.getElementById('editCustPhone').value.trim(); } if (newName !== oldName && db.accounts[oldName]) { db.accounts[newName] = db.accounts[oldName]; delete db.accounts[oldName]; } await saveDB(); closeModal('modalEditCust'); updateUI(); document.getElementById('selCustomer').value = newName; loadCustomerLedger(); alert('Edited.'); }
 
 async function submitTx() {
+    // ... (کدهای گرفتن مقادیر از ورودی‌ها مثل قبل بماند)
     const c = document.getElementById('txCust').value; 
     const t = document.getElementById('txType').value; 
     const a = parseFloat(document.getElementById('txAmt').value); 
@@ -3517,10 +3950,11 @@ async function submitTx() {
     
     if (!c || !a || a <= 0) { alert("Data Error"); return; }
     
-    // متن لاگ فارسی
+    // ... (کد لاگ کردن متن فارسی مثل قبل بماند)
     const typeText = t === 'debit' ? 'برداشت از حساب (پرداخت نقد)' : 'واریز به حساب (دریافت نقد)';
     const logDetail = `${typeText} مشتری: ${c} | توضیحات: ${d}`;
 
+    // تغییر موجودی صندوق
     if (t === 'debit') { 
         if (((db.cashBox[cur]||0) + (db.initialCapital[cur]||0)) < a) { alert('Low Cash'); return; } 
         db.cashBox[cur] -= a; 
@@ -3529,42 +3963,86 @@ async function submitTx() {
     }
     
     const accId = Date.now();
+    // اضافه کردن به آرایه در حافظه
+    if(!db.accounts[c]) db.accounts[c] = [];
     db.accounts[c].push({ id: accId, date: Date.now(), desc: d, curr: cur, debit: t === 'debit' ? a : 0, credit: t === 'credit' ? a : 0, type: t });
     
+    // ثبت لاگ (خود لاگ جداگانه ذخیره می‌شود)
     logTx('تراکنش حساب', logDetail, `${a} ${cur}`, 'TX', { type: t, cust: c, accId: accId, amt: a, curr: cur }); 
     
-    await saveDB(); closeModal('modalTx'); loadCustomerLedger(); renderDashboard(); alert("Saved.");
+    // *** تغییر مهم: ذخیره فقط حساب همین مشتری در فایربیس ***
+    await dbAdapter.saveCustomerAccount(c, db.accounts[c]);
+    
+    // ذخیره صندوق و تنظیمات (چون صندوق تغییر کرده)
+    await saveDB(); 
+
+    closeModal('modalTx'); loadCustomerLedger(); renderDashboard(); alert("Saved.");
 }
 
-function loadCustomerLedger() {
-    const c = document.getElementById('selCustomer').value; const div = document.getElementById('ledgerCard');
+async function loadCustomerLedger() {
+    const c = document.getElementById('selCustomer').value; 
+    const div = document.getElementById('ledgerCard');
+    
     if (!c) { div.style.display = 'none'; return; }
+    
+    // بررسی: آیا اطلاعات این مشتری قبلاً لود شده است؟
+    if (!db.accounts[c]) {
+        // اگر لود نشده بود، الان دانلود کن (نمایش پیام انتظار)
+        document.getElementById('ledgerName').innerText = "در حال دریافت اطلاعات...";
+        const downloadedList = await dbAdapter.loadSingleAccount(c);
+        db.accounts[c] = downloadedList; // ذخیره در حافظه موقت برای استفاده‌های بعدی
+    }
+
     div.style.display = 'block'; 
     const custObj = db.customers.find(customer => customer.name === c);
     document.getElementById('ledgerName').innerText = c;
     document.getElementById('ledgerPhone').innerText = custObj ? `(${custObj.phone || ''})` : '';
-    const list = db.accounts[c] || []; list.sort((a, b) => a.date - b.date); 
+    
+    const list = db.accounts[c] || []; 
+    list.sort((a, b) => a.date - b.date); 
+    
     const bal = {};
-    const t = TRANSLATIONS[currentLang];
+    const t = TRANSLATIONS[currentLang]; // مطمئن شوید TRANSLATIONS در دسترس است
+    
     document.getElementById('ledgerBody').innerHTML = list.map(x => {
         bal[x.curr] = (bal[x.curr] || 0) + (x.credit - x.debit);
-        return `<tr><td>${new Date(x.date).toLocaleDateString(currentLang === 'fa' ? 'fa-IR' : 'en-US')}</td><td>${escapeHtml(x.desc)}</td><td>${x.curr}</td><td class="${x.debit > 0 ? 'text-red' : ''}">${x.debit > 0 ? x.debit.toLocaleString() : '-'}</td><td class="${x.credit > 0 ? 'text-green' : ''}">${x.credit > 0 ? x.credit.toLocaleString() : '-'}</td><td dir="ltr" style="font-weight:bold">${bal[x.curr].toLocaleString()}</td><td class="no-print"><button class="btn btn-red admin-only-col" style="padding:2px 5px; font-size:10px" onclick="delTx('${c}',${x.id})">x</button></td></tr>`;
+        return `<tr>
+            <td>${new Date(x.date).toLocaleDateString(currentLang === 'fa' ? 'fa-IR' : 'en-US')}</td>
+            <td>${escapeHtml(x.desc)}</td>
+            <td>${x.curr}</td>
+            <td class="${x.debit > 0 ? 'text-red' : ''}">${x.debit > 0 ? x.debit.toLocaleString() : '-'}</td>
+            <td class="${x.credit > 0 ? 'text-green' : ''}">${x.credit > 0 ? x.credit.toLocaleString() : '-'}</td>
+            <td dir="ltr" style="font-weight:bold">${bal[x.curr].toLocaleString()}</td>
+            <td class="no-print"><button class="btn btn-red admin-only-col" style="padding:2px 5px; font-size:10px" onclick="delTx('${c}',${x.id})">x</button></td>
+        </tr>`;
     }).join('');
-    let s = ''; for (let k in bal) if (Math.abs(bal[k]) > 0.1) s += `<span class="${bal[k] > 0 ? 'text-red' : 'text-green'}" style="margin-right:10px">${bal[k].toLocaleString()} ${k}</span>`;
-    document.getElementById('ledgerFinalSum').innerHTML = s || '0'; applyPermissions();
+    
+    let s = ''; 
+    for (let k in bal) {
+        if (Math.abs(bal[k]) > 0.1) {
+            s += `<span class="${bal[k] > 0 ? 'text-red' : 'text-green'}" style="margin-right:10px">${bal[k].toLocaleString()} ${k}</span>`;
+        }
+    }
+    document.getElementById('ledgerFinalSum').innerHTML = s || '0'; 
+    applyPermissions();
 }
-
 async function delTx(c, id) { if (!currentUser.perms.admin || !confirm('Delete?')) return; const idx = db.accounts[c].findIndex(x => x.id === id); const tx = db.accounts[c][idx]; if (tx.type === 'debit') db.cashBox[tx.curr] += tx.debit; else db.cashBox[tx.curr] -= tx.credit; db.accounts[c].splice(idx, 1); await saveDB(); loadCustomerLedger(); renderDashboard(); }
 async function deleteCustomer() { const c = document.getElementById('selCustomer').value; if (!c || !confirm('Delete Customer?')) return; delete db.accounts[c]; db.customers = db.customers.filter(cust => cust.name !== c); await saveDB(); updateUI(); document.getElementById('ledgerCard').style.display = 'none'; }
 function openModalClientTransfer() { const s = document.getElementById('selCustomer').value; if(!s) { alert("Select Source"); return; } document.getElementById('ctSender').innerText = s; openModal('modalClientTransfer'); }
-async function submitClientTransfer() { 
-    const s = document.getElementById('selCustomer').value; const r = document.getElementById('ctReceiver').value; const a = parseFloat(document.getElementById('ctAmt').value); const cur = document.getElementById('ctCurr').value; const desc = document.getElementById('ctDesc').value || '';
-    if(!s || !r || s===r || !a || a<=0) return alert("Error");
-    const id1 = Date.now(); const id2 = Date.now()+1;
-    db.accounts[s].push({id:id1,date:Date.now(),desc:`Trf to ${r} - ${desc}`,curr:cur,debit:a,credit:0,type:'debit'}); 
-    db.accounts[r].push({id:id2,date:Date.now(),desc:`Trf from ${s} - ${desc}`,curr:cur,debit:0,credit:a,type:'credit'}); 
-    logTx('انتقال حساب', `Trf ${s}->${r}`, `${a} ${cur}`, 'ACC_TRANSFER', {s:s, r:r, amt:a, curr:cur, id1:id1, id2:id2});
-    await saveDB(); closeModal('modalClientTransfer'); alert('Done'); loadCustomerLedger();
+async function submitClientTransfer() {
+    // ... (کدهای قبلی محاسبات)
+    
+    // بعد از push کردن تراکنش‌ها به db.accounts[s] و db.accounts[r]:
+    
+    // ذخیره جداگانه هر دو طرف حساب
+    await dbAdapter.saveCustomerAccount(s, db.accounts[s]);
+    await dbAdapter.saveCustomerAccount(r, db.accounts[r]);
+    
+    // ذخیره لاگ و تنظیمات عمومی
+    // logTx خودش ذخیره لاگ را انجام می‌دهد
+    await saveDB(); 
+    
+    closeModal('modalClientTransfer'); alert('Done'); loadCustomerLedger();
 }
 function setExType(type) { 
     exType = type; 
@@ -3750,7 +4228,7 @@ function printHawalaList() {
     const filterStatus = document.getElementById('filterHStatus').value;
 
     if (filterType === 'All') {
-        alert("لطفاً نوع (ارسالی یا دریافتی) را مشخص کنید.");
+        alert("لطفاً نوع (ارسالی یا دریافتی) را برای چاپ کتاب مشخص کنید.");
         return;
     }
 
@@ -3761,163 +4239,152 @@ function printHawalaList() {
     ).sort((a, b) => a.regDate - b.regDate);
 
     if (filtered.length === 0) {
-        alert("هیچ حواله‌ای یافت نشد.");
+        alert("هیچ حواله‌ای با این مشخصات یافت نشد.");
         return;
     }
 
     const presentCurrencies = [...new Set(filtered.map(h => h.curr))];
 
+    // محاسبه جمع کل
     let amountTotals = {};
-    let commTotals = {}; // آبجکت جدید برای نگهداری جمع کمیشن هر ارز
-
+    let commTotals = {}; 
     presentCurrencies.forEach(c => amountTotals[c] = 0);
 
     filtered.forEach(h => {
-        // جمع مبلغ حواله
-        amountTotals[h.curr] += h.amt;
+        if (amountTotals[h.curr] !== undefined) amountTotals[h.curr] += h.amt;
+        else amountTotals[h.curr] = h.amt;
 
         if(h.comm && h.comm !== 0) {
             const cCurr = h.commCurr || h.curr;
-            
             if(!commTotals[cCurr]) commTotals[cCurr] = 0;
             commTotals[cCurr] += h.comm;
         }
     });
 
+    // هدر ستون‌های ارز
     let currencyHeaders = presentCurrencies.map(c => 
-        `<th style="background:#e0e0e0;">مبلغ (${c})</th>`
+        `<th style="background:#ddd !important; border-bottom:2px solid #000; min-width:80px;">مبلغ (${c})</th>`
     ).join('');
 
+    // ساخت ردیف‌ها
     const tableRows = filtered.map((h, i) => {
-        const sName = `${h.sender} ${h.senderLast||''}`;
-        const sFather = h.senderFather ? `ولد: ${h.senderFather}` : '';
-        const sPhone = h.senderPhone ? `موبایل: ${h.senderPhone}` : '';
-        const sID = h.senderID ? `تذکره: ${h.senderID}` : '';
+        // ساخت بلوک فرستنده - با بررسی دقیق وجود اطلاعات
+        let sInfo = `<div class="main-txt">${h.sender} ${h.senderLast||''}</div>`;
+        if(h.senderFather) sInfo += `<div class="sub-txt">ولد: ${h.senderFather}</div>`;
+        if(h.senderPhone)  sInfo += `<div class="sub-txt">تلفن: ${h.senderPhone}</div>`;
+        if(h.senderID)     sInfo += `<div class="sub-txt">ID: ${h.senderID}</div>`;
 
-        const rName = `${h.receiver} ${h.receiverLast||''}`;
-        const rFather = h.receiverFather ? `ولد: ${h.receiverFather}` : '';
-        const rPhone = h.receiverPhone ? `موبایل: ${h.receiverPhone}` : '';
-        const rID = h.receiverID ? `تذکره: ${h.receiverID}` : ''; 
+        // ساخت بلوک گیرنده
+        let rInfo = `<div class="main-txt">${h.receiver} ${h.receiverLast||''}</div>`;
+        if(h.receiverFather) rInfo += `<div class="sub-txt">ولد: ${h.receiverFather}</div>`;
+        if(h.receiverPhone)  rInfo += `<div class="sub-txt">تلفن: ${h.receiverPhone}</div>`;
+        if(h.receiverID)     rInfo += `<div class="sub-txt">ID: ${h.receiverID}</div>`;
 
-        const dateStr = new Date(h.regDate).toLocaleDateString('fa-IR');
-        const desc = h.receiverPurpose || h.senderPurpose || '-';
-        const commText = h.comm ? `${h.comm} <span style="font-size:9px">(${h.commCurr||h.curr})</span>` : '0';
-
+        // ستون‌های مبلغ
         const amountCells = presentCurrencies.map(curr => {
             if (h.curr === curr) {
-                return `<td style="text-align:center; font-weight:bold; font-size:13px;">${h.amt.toLocaleString()}</td>`;
+                return `<td style="text-align:center; font-weight:bold; font-size:12px; vertical-align:middle;">${h.amt.toLocaleString()}</td>`;
             } else {
-                return `<td style="text-align:center; color:#ccc;">-</td>`;
+                return `<td style="text-align:center; background:#f5f5f5; color:#ccc; vertical-align:middle;">-</td>`;
             }
         }).join('');
 
+        const commText = h.comm ? `<span dir="ltr">${h.comm.toLocaleString()} ${h.commCurr||h.curr}</span>` : '0';
+        const dateStr = h.execDate ? new Date(h.execDate).toLocaleDateString('fa-IR') : (new Date(h.regDate).toLocaleDateString('fa-IR') + ' (ثبت)');
+
         return `
             <tr>
-                <td style="text-align:center;">${i + 1}</td>
-                <td style="text-align:center;"><b style="font-size:12px">${h.displayId || h.id}</b></td>
-                
-                <td class="info-cell">
-                    <div class="main-name">${sName}</div>
-                    ${sFather ? `<div><span class="sub-label">${sFather}</span></div>` : ''}
-                    ${sPhone ? `<div><span class="sub-label">${sPhone}</span></div>` : ''}
-                    ${sID ? `<div><span class="sub-label">${sID}</span></div>` : ''}
-                </td>
-
-                <td class="info-cell">
-                    <div class="main-name">${rName}</div>
-                    ${rFather ? `<div><span class="sub-label">${rFather}</span></div>` : ''}
-                    ${rPhone ? `<div><span class="sub-label">${rPhone}</span></div>` : ''}
-                    ${rID ? `<div><span class="sub-label">${rID}</span></div>` : ''}
-                </td>
-
-                ${amountCells} <td style="text-align:center; font-weight:bold;" dir="ltr">${commText}</td>
-                <td style="text-align:center; font-size:11px;">${desc}</td>
-                <td style="text-align:center; font-size:11px;">${dateStr}</td>
+                <td style="text-align:center; vertical-align:middle;">${i + 1}</td>
+                <td style="text-align:center; vertical-align:middle; font-weight:bold;">${h.displayId || h.bookNum}</td>
+                <td style="padding:4px 8px; text-align:right; vertical-align:top;">${sInfo}</td>
+                <td style="padding:4px 8px; text-align:right; vertical-align:top;">${rInfo}</td>
+                ${amountCells}
+                <td style="text-align:center; vertical-align:middle;">${commText}</td>
+                <td style="text-align:center; vertical-align:middle; font-size:10px;">${h.receiverPurpose || h.senderPurpose || '-'}</td>
+                <td style="text-align:center; vertical-align:middle; font-size:11px;">${dateStr}</td>
             </tr>
         `;
     }).join('');
 
+    // بخش جمله شد
     let summaryAmountsHtml = presentCurrencies.map(c => 
-        `<div class="summary-item">مجموع ${c}: <b dir="ltr">${amountTotals[c].toLocaleString()}</b></div>`
+        `<div class="sum-box">جمله شد ${c}: <b dir="ltr">${amountTotals[c].toLocaleString()}</b></div>`
     ).join('');
 
     let summaryCommsHtml = '';
-    const commCurrencies = Object.keys(commTotals);
-    if (commCurrencies.length === 0) {
-        summaryCommsHtml = '<b dir="ltr">0</b>';
+    const cKeys = Object.keys(commTotals);
+    if(cKeys.length > 0) {
+        summaryCommsHtml = cKeys.map(c => `<b dir="ltr">${commTotals[c].toLocaleString()}</b> ${c}`).join(' + ');
     } else {
-        summaryCommsHtml = commCurrencies.map(c => 
-            `<span style="margin:0 5px; color:#d32f2f;"><b dir="ltr">${commTotals[c].toLocaleString()}</b> ${c}</span>`
-        ).join(' | '); 
+        summaryCommsHtml = '0';
     }
 
     const title = filterType === 'Outgoing' ? 'کتاب حوالجات ارسالی' : 'کتاب حوالجات دریافتی';
+    
     const win = window.open('', '_blank', 'width=1200,height=800');
-
     win.document.write(`
         <!DOCTYPE html>
         <html dir="rtl" lang="fa">
         <head>
             <title>${title}</title>
             <style>
-                @page { size: A4 landscape; margin: 1cm; }
-                body { font-family: 'Tahoma', 'Vazirmatn', sans-serif; background: #fff; padding: 10px; margin: 0; }
+                @page { size: A4 landscape; margin: 10mm; }
+                body { font-family: 'Tahoma', 'Vazirmatn', sans-serif; background: #fff; padding: 10px; margin: 0; color: #000; }
                 
-                .summary-box {
+                .header-box {
                     display: flex; flex-wrap: wrap; justify-content: center; gap: 15px;
-                    border: 2px solid #000; background: #f0f0f0; border-radius: 5px;
-                    padding: 15px; margin-bottom: 15px; font-size: 13px; align-items:center;
+                    border: 2px solid #000; background: #f9f9f9; border-radius: 8px;
+                    padding: 10px; margin-bottom: 15px; align-items: center;
                 }
-                .summary-item { border: 1px dashed #999; padding: 5px 10px; background: #fff; border-radius: 4px; }
-                .summary-item b { font-size: 15px; margin-right: 5px; color: #000; }
+                .sum-box { 
+                    border: 1px solid #000; padding: 5px 15px; background: #fff; 
+                    font-size: 14px; font-weight:bold; box-shadow: 2px 2px 0 #ccc;
+                }
                 
-                /* استایل مخصوص بخش کمیشن در هدر */
-                .comm-summary { border: 2px solid #d32f2f; background: #fff; padding: 5px 10px; border-radius: 4px; }
-
-                table { width: 100%; border-collapse: collapse; font-size: 11px; }
-                th, td { border: 1px solid #444; padding: 5px; vertical-align: top; }
-                th { background: #e0e0e0; font-weight: bold; text-align: center; font-size: 12px; padding: 8px 0; }
+                table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top:10px; }
+                th, td { border: 1px solid #000; padding: 4px; }
+                th { background: #e0e0e0; text-align: center; padding: 8px 0; -webkit-print-color-adjust: exact; }
                 
-                .info-cell div { margin-bottom: 2px; line-height: 1.3; }
-                .main-name { font-weight: bold; font-size: 12px; border-bottom: 1px dashed #ccc; padding-bottom: 2px; margin-bottom: 3px !important; display:block; }
-                .sub-label { color: #555; font-size: 10px; }
+                /* استایل مهم برای نمایش زیر هم */
+                .main-txt { font-weight: bold; font-size: 12px; margin-bottom: 3px; border-bottom: 1px dotted #999; display:block; }
+                .sub-txt { font-size: 11px; color: #444; margin-top: 1px; display:block; }
 
                 @media print {
                     body { margin: 0; }
-                    .summary-box { background: #fff !important; border: 2px solid #000; }
-                    th { background: #eee !important; -webkit-print-color-adjust: exact; }
+                    .header-box { background: none !important; border: 2px solid #000; }
+                    .sum-box { box-shadow: none; border: 1px solid #000; }
+                    th { background: #ccc !important; }
+                    td { background: transparent !important; }
                 }
             </style>
         </head>
         <body>
             ${getPrintHeaderHTML()}
-            <h3 style="text-align:center; margin:5px 0 10px 0;">${title}</h3>
+            <h3 style="text-align:center; margin:0 0 10px 0;">${title} - شهر: ${filterCity === 'All' ? 'همه شهرها' : filterCity}</h3>
 
-            <div class="summary-box">
-                <div class="summary-item" style="background:#e8f5e9">تعداد: <b>${filtered.length}</b></div>
-                
-                ${summaryAmountsHtml} <div class="comm-summary">
-                    مجموع کمیشن: ${summaryCommsHtml}
-                </div>
+            <div class="header-box">
+                ${summaryAmountsHtml}
+                <div class="sum-box" style="border-color:red;">مجموع کمیشن: ${summaryCommsHtml}</div>
             </div>
 
             <table>
                 <thead>
                     <tr>
-                        <th style="width:4%">#</th>
-                        <th style="width:8%">شماره</th>
-                        <th style="width:20%">مشخصات فرستنده</th>
-                        <th style="width:20%">مشخصات گیرنده</th>
-                        
-                        ${currencyHeaders} <th style="width:8%">کمیشن</th>
-                        <th style="width:10%">جزئیات</th>
-                        <th style="width:8%">تاریخ</th>
+                        <th style="width:30px">#</th>
+                        <th style="width:70px">شماره</th>
+                        <th style="width:18%">مشخصات فرستنده</th>
+                        <th style="width:18%">مشخصات گیرنده</th>
+                        ${currencyHeaders}
+                        <th style="width:80px">کمیشن</th>
+                        <th style="width:12%">توضیحات</th>
+                        <th style="width:70px">تاریخ</th>
                     </tr>
                 </thead>
                 <tbody>
                     ${tableRows}
                 </tbody>
             </table>
+            <div style="margin-top:10px; font-size:10px;">تاریخ چاپ: ${new Date().toLocaleDateString('fa-IR')} | کاربر: ${currentUser ? currentUser.u : '-'}</div>
         </body>
         </html>
     `);
@@ -5279,7 +5746,7 @@ function renderCityList() {
     updateUI(); 
 }
 
-// آماده‌سازی فرم برای ویرایش
+
 function prepareEditCity(code) {
     const city = db.cities.find(c => c.code === code);
     if(!city) return;
@@ -5289,10 +5756,10 @@ function prepareEditCity(code) {
     document.getElementById('newCityRep').value = city.rep || '';
     document.getElementById('newCityContact').value = city.contact || '';
     
-    // ذخیره کد قدیمی برای شناسایی در هنگام ذخیره
+    
     document.getElementById('editCityOldCode').value = city.code;
     
-    // تغییر دکمه‌ها
+    
     const btnSave = document.getElementById('btnSaveCity');
     btnSave.innerText = "💾 ذخیره تغییرات";
     btnSave.classList.remove('btn-gold');
@@ -5301,7 +5768,7 @@ function prepareEditCity(code) {
     document.getElementById('btnCancelEditCity').style.display = 'inline-block';
 }
 
-// انصراف از ویرایش
+
 function cancelCityEdit() {
     document.getElementById('newCityName').value = '';
     document.getElementById('newCityCode').value = '';
@@ -5317,7 +5784,6 @@ function cancelCityEdit() {
     document.getElementById('btnCancelEditCity').style.display = 'none';
 }
 
-// تابع اصلی ذخیره (هم برای جدید و هم ویرایش)
 async function saveCityProcess() {
     const name = document.getElementById('newCityName').value.trim();
     const code = document.getElementById('newCityCode').value.trim().toUpperCase();
@@ -5328,18 +5794,18 @@ async function saveCityProcess() {
     if (!name || !code) { alert("نام و کد شهر الزامی است"); return; }
 
     if (oldCode) {
-        // --- حالت ویرایش ---
+        
         const index = db.cities.findIndex(c => c.code === oldCode);
         if (index !== -1) {
             db.cities[index] = { name, code, rep, contact };
             
-            // اگر کد شهر عوض شده باشد، باید تمام حواله‌های قبلی هم آپدیت شوند
+            
             if (oldCode !== code) {
                 db.hawalas.forEach(h => {
                     if (h.cityBook === oldCode) h.cityBook = code;
                 });
                 
-                // کانترها هم باید منتقل شوند
+                
                 if(db.cityHawalaCounters[oldCode]) {
                     db.cityHawalaCounters[code] = db.cityHawalaCounters[oldCode];
                     delete db.cityHawalaCounters[oldCode];
@@ -5348,7 +5814,6 @@ async function saveCityProcess() {
             alert("مشخصات شهر/نماینده ویرایش شد.");
         }
     } else {
-        // --- حالت جدید ---
         if (db.cities.some(c => c.code === code)) { alert("این کد شهر قبلاً ثبت شده است!"); return; }
         
         db.cities.push({ name, code, rep, contact });
@@ -5357,11 +5822,11 @@ async function saveCityProcess() {
     }
 
     await saveDB();
-    cancelCityEdit(); // پاک کردن فرم
-    renderCityList(); // بازسازی لیست
+    cancelCityEdit(); 
+    renderCityList(); 
 }
 
-// حذف ساده (اگر حواله نداشته باشد)
+
 async function deleteSimpleCity(code) {
     const hasData = db.hawalas.some(h => h.cityBook === code);
     if(hasData) {
@@ -5374,6 +5839,127 @@ async function deleteSimpleCity(code) {
     await saveDB();
     renderCityList();
 }
+// --- تابع جدید برای ساخت اکسل کامل ---
+function fullExcelBackup() {
+    if (!confirm("آیا می‌خواهید گزارش جامع اکسل (Excel) از تمام حساب‌ها و صندوق تهیه کنید؟")) return;
+
+    const wb = XLSX.utils.book_new();
+    const dateStr = new Date().toLocaleDateString('fa-IR').replace(/\//g, '-');
+
+    // 1. صفحه موجودی صندوق
+    const cashData = db.currencies.map(c => ({
+        'ارز': c,
+        'موجودی فعلی': (db.cashBox[c] || 0),
+        'سرمایه اولیه': (db.initialCapital[c] || 0)
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(cashData), "موجودی صندوق");
+
+    // 2. صفحه لیست حواله‌ها
+    const hawalaData = db.hawalas.map(h => ({
+        'شماره': h.displayId || h.id,
+        'نوع': h.type === 'Outgoing' ? 'ارسالی' : 'دریافتی',
+        'شهر': h.cityBook,
+        'مبلغ': h.amt,
+        'ارز': h.curr,
+        'فرستنده': h.sender,
+        'گیرنده': h.receiver,
+        'وضعیت': h.status === 'Done' ? 'تمام شده' : 'معلق'
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(hawalaData), "لیست حوالجات");
+
+    // 3. صفحه مانده حساب مشتریان
+    let accountSummary = [];
+    if (db.customers) {
+        db.customers.forEach(cust => {
+            const txList = db.accounts[cust.name] || [];
+            let bals = {};
+            txList.forEach(t => { bals[t.curr] = (bals[t.curr] || 0) + (t.credit - t.debit); });
+            // تبدیل مانده‌ها به متن قابل خواندن
+            let balStr = Object.entries(bals)
+                .filter(([k,v]) => Math.abs(v) > 0)
+                .map(([k,v]) => `${v.toLocaleString()} ${k}`)
+                .join(' | ');
+            
+            if(balStr) {
+                accountSummary.push({ 
+                    'نام مشتری': cust.name, 
+                    'تلفن': cust.phone, 
+                    'مانده حساب': balStr 
+                });
+            }
+        });
+    }
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(accountSummary), "مانده مشتریان");
+
+    // 4. صفحه لاگ سیستم
+    const logData = db.journal.map(j => ({
+        'زمان': new Date(j.time).toLocaleString('fa-IR'),
+        'بخش': j.section,
+        'توضیحات': j.desc,
+        'مبلغ': j.amt,
+        'کاربر': j.user
+    }));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(logData), "لاگ سیستم");
+
+    // دانلود فایل
+    XLSX.writeFile(wb, `Excel_Report_${dateStr}.xlsx`);
+}
+// =========================================
+// کدهای جدید جاوااسکریپت (شروع)
+// =========================================
+
+// 1. هوشمندسازی منوی پایین
+const originalGoFunc = window.go;
+window.go = function(pageId) {
+    if(typeof originalGoFunc === 'function') originalGoFunc(pageId);
+    
+    // تغییر رنگ دکمه‌ها
+    document.querySelectorAll('.m-nav-item').forEach(b => b.classList.remove('active'));
+    if(pageId === 'dashboard') document.getElementById('mn-dash')?.classList.add('active');
+    if(pageId === 'hawala') document.getElementById('mn-hawala')?.classList.add('active');
+    if(pageId === 'accounts') document.getElementById('mn-acc')?.classList.add('active');
+    
+    document.getElementById('fabMenu').style.display = 'none';
+    window.scrollTo(0,0);
+};
+
+function toggleFab() {
+    const m = document.getElementById('fabMenu');
+    m.style.display = (m.style.display === 'none') ? 'block' : 'none';
+}
+
+// 2. خروج امن (بک‌آپ گیری خودکار)
+// این کد جایگزین دکمه خروج قبلی می‌شود
+window.logout = function() {
+    const msg = document.getElementById('loadingMsg');
+    if(msg) { msg.style.display='block'; msg.innerText='در حال پشتیبان‌گیری... لطفاً صبر کنید'; }
+    
+    try { exportDB(); } catch(e) { console.error(e); }
+    
+    setTimeout(() => { location.reload(); }, 2000);
+};
+
+// 3. حذف امن مشتری (با رمز hazf)
+// این کد جایگزین حذف ساده قبلی می‌شود
+window.deleteCustomer = async function() {
+    const c = document.getElementById('selCustomer').value;
+    if(!c) return;
+    
+    const code = prompt("اخطار: برای حذف کامل حساب این مشتری، کلمه hazf را بنویسید:");
+    if(code !== "hazf") return alert("حذف لغو شد.");
+
+    if(db.accounts[c]) delete db.accounts[c];
+    db.customers = db.customers.filter(cust => cust.name !== c);
+    
+    await saveDB();
+    document.getElementById('ledgerCard').style.display = 'none';
+    document.getElementById('customerListCard').style.display = 'block';
+    renderCustomers();
+    alert("حساب مشتری با موفقیت حذف شد.");
+};
+// =========================================
+// کدهای جدید جاوااسکریپت (پایان)
+// =========================================
 </script>
 </body>
 </html>
