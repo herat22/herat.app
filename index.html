@@ -1373,14 +1373,31 @@ th, td { white-space: nowrap; padding: 15px !important; font-size: 13px !importa
                 <div class="settings-menu-btn active" onclick="switchSettingsTab('tab-profile', this)">🏢 پروفایل صرافی</div>
                 <div class="settings-menu-btn" onclick="switchSettingsTab('tab-print', this)">🖨 تنظیمات چاپ</div>
                 
-                <div id="adminMenuSection" style="display:none; margin-top:20px; border-top:1px dashed var(--gold-border); padding-top:10px">
-                    <div style="font-size:11px; color:var(--text-muted); margin-bottom:10px; padding-right:10px">مدیریت (Admin)</div>
-                    <div class="settings-menu-btn" onclick="switchSettingsTab('tab-capital', this)">💰 سرمایه اولیه</div>
-                    <div class="settings-menu-btn" onclick="switchSettingsTab('tab-currency', this)">💵 مدیریت ارزها</div>
-                    <div class="settings-menu-btn" onclick="switchSettingsTab('tab-cities', this)">🏙 مدیریت شهرها (کتاب)</div>
-                    <div class="settings-menu-btn" onclick="switchSettingsTab('tab-users', this)">👥 مدیریت کاربران</div>
-                    <div class="settings-menu-btn" style="color:var(--danger)" onclick="switchSettingsTab('tab-reset', this)">⚠️ ریستارت برنامه</div>
-                </div>
+<div id="adminMenuSection" style="display:none; margin-top:20px; border-top:1px dashed var(--gold-border); padding-top:10px">
+    <div style="font-size:11px; color:var(--text-muted); margin-bottom:10px; padding-right:10px">دسترسی سریع مدیریت (Reports)</div>
+    
+    <div class="settings-menu-btn" onclick="closeModal('modalSettings'); go('analysis')">
+        📊 آنالیز سرمایه (F7)
+    </div>
+    <div class="settings-menu-btn" onclick="closeModal('modalSettings'); go('commissions')">
+        💰 حساب کمیشن‌ها
+    </div>
+    <div class="settings-menu-btn" onclick="closeModal('modalSettings'); go('reports')">
+        📑 لاگ سیستم و ژورنال
+    </div>
+    <div class="settings-menu-btn" onclick="closeModal('modalSettings'); go('employees')">
+        👔 مدیریت کارمندان
+    </div>
+
+    <div style="border-top:1px dashed var(--gold-border); margin:10px 0;"></div>
+    
+    <div style="font-size:11px; color:var(--text-muted); margin-bottom:10px; padding-right:10px">تنظیمات سیستمی</div>
+    <div class="settings-menu-btn" onclick="switchSettingsTab('tab-capital', this)">🏦 سرمایه اولیه</div>
+    <div class="settings-menu-btn" onclick="switchSettingsTab('tab-currency', this)">💵 مدیریت ارزها</div>
+    <div class="settings-menu-btn" onclick="switchSettingsTab('tab-cities', this)">🏙 مدیریت شهرها</div>
+    <div class="settings-menu-btn" onclick="switchSettingsTab('tab-users', this)">👥 مدیریت کاربران</div>
+    <div class="settings-menu-btn" style="color:var(--danger)" onclick="switchSettingsTab('tab-reset', this)">⚠️ ریستارت برنامه</div>
+</div>
                 
                 <div style="margin-top:auto">
 
