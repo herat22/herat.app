@@ -312,95 +312,103 @@ html[dir="ltr"] .submenu {
     transform: scale(1.05);
 }
 
-/* ================================================= */
-/* شروع تنظیمات مخصوص موبایل (App Design)           */
-/* ================================================= */
-.mobile-nav, .fab-btn, #fabMenu { display: none !important; } /* پیش‌فرض مخفی */
 
+
+
+
+
+/* ================================================= */
+/* GLOBAL MOBILE STANDARDS (Material/iOS Style)      */
+/* ================================================= */
+body { -webkit-font-smoothing: antialiased; font-size: 14px; }
+
+/* استانداردسازی کارت‌ها */
+.card {
+    border: none !important;
+    border-radius: 16px !important;
+    background: rgba(30, 41, 59, 0.6) !important;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1) !important;
+    margin-bottom: 16px !important;
+    padding: 20px !important;
+}
+
+/* ورودی‌ها و دکمه‌ها */
+.input, select.input, .btn {
+    height: 52px !important;
+    font-size: 16px !important;
+    border-radius: 12px !important;
+    padding: 0 15px !important;
+}
+.btn { font-weight: 700 !important; letter-spacing: 0.5px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); width: 100%; margin-bottom: 8px; }
+
+/* جداول اسکرول‌خور */
+.table-container {
+    border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; background: rgba(0,0,0,0.2);
+    overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 5px;
+}
+th, td { white-space: nowrap; padding: 15px !important; font-size: 13px !important; }
+
+/* منوی پایین ثابت */
+.mobile-nav {
+    display: flex !important; position: fixed; bottom: 0; left: 0; right: 0;
+    height: 65px; background: #0f172a !important;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 -5px 20px rgba(0,0,0,0.3);
+    justify-content: space-around; align-items: center; z-index: 9999;
+    padding-bottom: env(safe-area-inset-bottom);
+}
+@media print { .mobile-nav { display: none !important; } }
+@media screen and (min-width: 769px) { .mobile-nav { display: none !important; } }
+
+.m-nav-item {
+    background: transparent; border: none; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; color: #94a3b8;
+    font-size: 10px; font-weight: bold; gap: 4px; width: 60px; height: 100%;
+}
+.m-nav-item .m-icon { font-size: 20px; margin-bottom: 2px; display: block; }
+.m-nav-item.active { color: var(--gold-primary); }
+.m-nav-item.active .m-icon { transform: translateY(-3px); filter: drop-shadow(0 4px 6px rgba(212, 175, 55, 0.4)); }
+
+/* دکمه شناور */
+.fab-btn {
+    display: flex !important; align-items: center; justify-content: center;
+    width: 56px !important; height: 56px !important;
+    background: linear-gradient(135deg, #fbbf24, #b45309);
+    border-radius: 50%; position: fixed; bottom: 85px !important; left: 50%;
+    transform: translateX(-50%); border: none !important; color: #000;
+    font-size: 32px; font-weight: bold; z-index: 10000;
+    box-shadow: 0 4px 15px rgba(251, 191, 36, 0.5); cursor: pointer; transition: 0.3s;
+}
+@media print { .fab-btn { display: none !important; } }
+@media screen and (min-width: 769px) { .fab-btn { display: none !important; } }
+
+/* ریسپانسیو موبایل */
 @media screen and (max-width: 768px) {
-    /* 1. حذف اجزای دسکتاپ در موبایل */
     .sidebar { display: none !important; }
     .theme-switch { top: 15px; left: 15px; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); }
     #printHeaderGlobal { display: none; }
-
-    /* 2. تنظیم بدنه اصلی برای موبایل */
-    body { background-color: #0f172a; } /* رنگ پس‌زمینه اپلیکیشن */
-    .content {
-        margin: 0 !important;
-        width: 100% !important;
-        padding: 15px !important;
-        padding-bottom: 100px !important; /* فضای خالی پایین برای منو */
-    }
-
-    /* 3. منوی پایین شیشه‌ای (Glassmorphism) */
-    .mobile-nav {
-        display: flex !important;
-        position: fixed;
-        bottom: 20px; left: 15px; right: 15px;
-        height: 70px;
-        background: rgba(15, 23, 42, 0.85); /* سرمه‌ای تیره شفاف */
-        backdrop-filter: blur(12px); /* تار کردن پشت زمینه */
-        border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 25px;
-        justify-content: space-around;
-        align-items: center;
-        z-index: 9999;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    }
-
-    .m-nav-item {
-        background: transparent; border: none;
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
-        color: #64748b; font-size: 10px; font-weight: bold; gap: 4px;
-        width: 60px; height: 100%; transition: 0.3s;
-    }
-    .m-nav-item .m-icon { font-size: 24px; margin-bottom: 2px; display: block; }
+    body { background-color: #0f172a; }
+    .content { margin: 0 !important; width: 100% !important; padding: 15px !important; padding-bottom: 100px !important; }
     
-    /* دکمه فعال */
-    .m-nav-item.active { color: #fbbf24; transform: translateY(-5px); }
-    .m-nav-item.active .m-icon { filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.6)); }
-
-    /* 4. دکمه شناور طلایی وسط (+) */
-    .fab-btn {
-        display: flex !important; align-items: center; justify-content: center;
-        width: 60px; height: 60px;
-        background: linear-gradient(135deg, #fbbf24, #b45309);
-        border-radius: 50%;
-        position: fixed; bottom: 50px; left: 50%; transform: translateX(-50%);
-        border: 5px solid #0f172a; /* حاشیه همرنگ پس‌زمینه */
-        color: #000; font-size: 32px; font-weight: bold;
-        z-index: 10000;
-        box-shadow: 0 5px 20px rgba(251, 191, 36, 0.4);
-        cursor: pointer;
+    .modal-content {
+        width: 100% !important; height: 100% !important; max-width: 100% !important;
+        border-radius: 0 !important; max-height: 100vh !important;
+        padding: 20px !important; padding-top: 60px !important;
     }
-    .fab-btn:active { transform: translateX(-50%) scale(0.9); }
-
-    /* 5. منوی مخفی پلاس */
-    #fabMenu {
-        position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%);
-        width: 90%; max-width: 300px;
-        background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(15px);
-        border: 1px solid rgba(251, 191, 36, 0.3);
-        border-radius: 20px; padding: 15px;
-        display: none; flex-direction: column; gap: 10px;
-        z-index: 10000; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    .close-icon {
+        top: 20px !important; right: 20px !important; left: auto !important;
+        font-size: 30px !important; background: rgba(255,255,255,0.1);
+        width: 40px; height: 40px; display: flex; align-items: center;
+        justify-content: center; border-radius: 50%;
     }
-
-    /* 6. استایل کارت‌ها و جداول در موبایل */
-    .card {
-        border-radius: 20px !important;
-        background: rgba(30, 41, 59, 0.7) !important; /* کارت‌های نیمه شفاف */
-        border: 1px solid rgba(255,255,255,0.05) !important;
-        box-shadow: 0 10px 20px rgba(0,0,0,0.2) !important;
-        padding: 15px !important;
-    }
-    .input, select.input, .btn { height: 50px !important; font-size: 16px !important; border-radius: 12px !important; }
-    .table-container { overflow-x: auto; border-radius: 12px; }
-    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr !important; gap: 15px !important; }
-    .header-bar { flex-direction: column; align-items: flex-start; gap: 10px; }
-    h2#pageTitle { font-size: 24px !important; border: none !important; }
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr !important; gap: 12px !important; }
+    .header-bar { margin-bottom: 20px !important; }
+    h2#pageTitle { font-size: 22px !important; border: none !important; }
+    .profit-section { flex-direction: column; gap: 15px; }
+    .profit-details { border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 15px; min-width: auto !important; }
+    .profit-details:last-child { border-bottom: none; }
 }
-/* ================================================= */
 </style>
 </head>
 <body>
@@ -495,29 +503,30 @@ html[dir="ltr"] .submenu {
             </button>
         </div>
     </div>
+
 <div class="mobile-nav no-print">
-    <button class="m-nav-item active" onclick="go('dashboard')" id="mn-dash">
+    <button class="m-nav-item" onclick="go('dashboard')" id="mn-dash">
         <span class="m-icon">📊</span><span>خانه</span>
     </button>
     <button class="m-nav-item" onclick="go('hawala')" id="mn-hawala">
         <span class="m-icon">✈️</span><span>حواله</span>
     </button>
-    <div style="width:50px"></div>
-    <button class="m-nav-item" onclick="go('accounts')" id="mn-acc">
-        <span class="m-icon">👥</span><span>حساب‌ها</span>
+    <div style="width: 60px;"></div> <button class="m-nav-item" onclick="go('accounts')" id="mn-acc">
+        <span class="m-icon">👥</span><span>اشخاص</span>
     </button>
     <button class="m-nav-item" onclick="openSettings()" id="mn-set">
         <span class="m-icon">⚙️</span><span>منو</span>
     </button>
 </div>
 
-<div class="fab-btn no-print" onclick="toggleFab()">+</div>
+<div class="fab-btn no-print" onclick="toggleFab()">
+    <span style="font-size:30px; margin-top:-2px;">+</span>
+</div>
 
-<div id="fabMenu" style="position:fixed; bottom:100px; left:50%; transform:translateX(-50%); z-index:10001; background:rgba(30,41,59,0.95); padding:15px; border-radius:15px; border:1px solid #fbbf24; display:none;">
-    <div style="display:flex; gap:10px;">
-        <button onclick="go('hawala');toggleFab()" class="btn">حواله جدید</button>
-        <button onclick="go('accounts');toggleFab()" class="btn">مشتری جدید</button>
-    </div>
+<div id="fabMenu" style="position:fixed; bottom:150px; left:50%; transform:translateX(-50%); z-index:10001; width:90%; max-width:300px; display:none; flex-direction:column; gap:10px;">
+    <button onclick="go('hawala'); openHawalaModal('Outgoing'); toggleFab()" class="btn btn-gold" style="box-shadow: 0 5px 20px rgba(0,0,0,0.5);">✈️ حواله ارسالی جدید</button>
+    <button onclick="go('exchange'); toggleFab()" class="btn btn-blue" style="box-shadow: 0 5px 20px rgba(0,0,0,0.5);">💱 خرید و فروش ارز</button>
+    <button onclick="go('accounts'); openModal('modalTx'); toggleFab()" class="btn btn-green" style="box-shadow: 0 5px 20px rgba(0,0,0,0.5);">💰 دریافت / پرداخت وجه</button>
 </div>
 <div class="content">
         <div class="header-bar" style="display:flex; justify-content:space-between; margin-bottom:30px; align-items: center;">
@@ -5923,43 +5932,49 @@ window.go = function(pageId) {
     window.scrollTo(0,0);
 };
 
+// =========================================
+// کدهای جدید رابط کاربری موبایل
+// =========================================
+
+// عملکرد دکمه شناور با انیمیشن و بلور
 function toggleFab() {
     const m = document.getElementById('fabMenu');
-    m.style.display = (m.style.display === 'none') ? 'block' : 'none';
+    const fabBtn = document.querySelector('.fab-btn');
+    const content = document.querySelector('.content');
+    
+    if (m.style.display === 'flex') {
+        m.style.display = 'none';
+        fabBtn.style.transform = 'translateX(-50%) rotate(0deg)';
+        fabBtn.style.background = 'linear-gradient(135deg, #fbbf24, #b45309)';
+        fabBtn.innerHTML = '<span style="font-size:30px; margin-top:-2px;">+</span>';
+        if(content) content.style.filter = 'none';
+    } else {
+        m.style.display = 'flex';
+        fabBtn.style.transform = 'translateX(-50%) rotate(45deg)';
+        fabBtn.style.background = '#ff5252'; 
+        fabBtn.innerHTML = '<span style="font-size:30px; margin-top:-2px;">+</span>';
+        if(content) content.style.filter = 'blur(5px)';
+    }
 }
 
-// 2. خروج امن (بک‌آپ گیری خودکار)
-// این کد جایگزین دکمه خروج قبلی می‌شود
-window.logout = function() {
-    const msg = document.getElementById('loadingMsg');
-    if(msg) { msg.style.display='block'; msg.innerText='در حال پشتیبان‌گیری... لطفاً صبر کنید'; }
+// اصلاح نویگیشن برای موبایل (رنگ دکمه‌ها و اسکرول)
+const originalGoFuncMobile = window.go;
+window.go = function(pageId) {
+    if(typeof originalGoFuncMobile === 'function') originalGoFuncMobile(pageId);
     
-    try { exportDB(); } catch(e) { console.error(e); }
+    // مدیریت اکتیو بودن دکمه‌های پایین
+    document.querySelectorAll('.m-nav-item').forEach(b => b.classList.remove('active'));
+    if(pageId === 'dashboard') document.getElementById('mn-dash')?.classList.add('active');
+    if(pageId === 'hawala') document.getElementById('mn-hawala')?.classList.add('active');
+    if(pageId === 'accounts') document.getElementById('mn-acc')?.classList.add('active');
     
-    setTimeout(() => { location.reload(); }, 2000);
+    // بستن منوی شناور اگر باز باشد
+    const m = document.getElementById('fabMenu');
+    if(m && m.style.display === 'flex') toggleFab();
+    
+    // اسکرول به بالای صفحه
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 };
-
-// 3. حذف امن مشتری (با رمز hazf)
-// این کد جایگزین حذف ساده قبلی می‌شود
-window.deleteCustomer = async function() {
-    const c = document.getElementById('selCustomer').value;
-    if(!c) return;
-    
-    const code = prompt("اخطار: برای حذف کامل حساب این مشتری، کلمه hazf را بنویسید:");
-    if(code !== "hazf") return alert("حذف لغو شد.");
-
-    if(db.accounts[c]) delete db.accounts[c];
-    db.customers = db.customers.filter(cust => cust.name !== c);
-    
-    await saveDB();
-    document.getElementById('ledgerCard').style.display = 'none';
-    document.getElementById('customerListCard').style.display = 'block';
-    renderCustomers();
-    alert("حساب مشتری با موفقیت حذف شد.");
-};
-// =========================================
-// کدهای جدید جاوااسکریپت (پایان)
-// =========================================
 </script>
 </body>
 </html>
